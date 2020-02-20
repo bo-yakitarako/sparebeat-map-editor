@@ -1,44 +1,99 @@
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# Sparebeat Map Editor(Web版)
+## URL(予定)
+https://editor.sparebeat.bo-yakitarako.com
 
-## Available Scripts
+## 何をするものか
 
-In the project directory, you can run:
+ブラウザ音楽ゲーム[Sparebeat](https://sparebeat.com)の創作譜面を作るため支援ツール
 
-### `yarn start`
+K-Shootエディタのような画面で譜面を直感的に作成することができる
 
-Runs the app in the development mode.<br />
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+## 機能概要
+### スタート画面
+- 新規作成、既存JSON読み込みの2つの選択
+- 新規作成の場合はMP3ファイル読み込み欄、BPM記入欄、難易度選択欄が現れる
+- 既存JSON読み込みの場合はMP3ファイル読み込み欄、JSONファイル読み込み欄が現れる
+- 必要項目を埋め、OKボタンを押すことでエディタ画面へ移動
 
-The page will reload if you make edits.<br />
-You will also see any lint errors in the console.
+### ノーツ表示
+- 1列に16ライン分、一定間隔のノーツがある
+- デフォルトは4列で、専用ボタンを押すことで列を増やしていく
+- 1画面に表示できる列数を決めてページとして、ページ単位で画面を管理
+    - ページの遷移は左右のボタンまたは真ん中のテキストボックスに書いて指定
+    - (ページのテキストボックス) / (総ページ数) のような表記で
+- 再生すると棒が動いて再生位置を示す
+- ノーツ間が一定なため、棒はBPMに応じて速度が変化する
+- 16分と24分の変換のときは既にノーツが置かれているところを変えない
 
-### `yarn test`
+### ノーツの追加、削除
+- 対応する場所を左クリックで追加、右クリックで削除
+- セレクトモードの場合は対象範囲の始点ノーツと終点ノーツを指定
+    - 範囲内のノーツをコピーして、別の始点ノーツを指定してペーストできる
+    - 範囲内のノーツを全て削除することができる
+- セレクトモードは後から追加する
+- ノーツ種類の選択は右下にポツンと配置、種類は次の4つ
+    - 通常ノーツ
+    - アタックノーツ
+    - ロングノーツ始点
+    - ロングノーツ終点
 
-Launches the test runner in the interactive watch mode.<br />
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### startTimeの調整
+- 再生プレイヤーバーの右辺りに配置
+- -- - 値 + ++ みたいな感じで配置
+- --では-10、-では-1、+では+1、++では+10される
+- startTimeがプラスの場合はそのミリ秒分だけ遅れて再生位置が動く
+- startTimeがマイナスの場合は再生位置が譜面の中に入り込んでから動く
 
-### `yarn build`
+### BPM、スピード変化、小節線表示、バインドゾーン編集
+- BPM、スピード変化の記載はノーツ右側にちょこんと
+- 小節線は左側のラインが薄い場合は非表示、濃い場合は表示で判定
+- バインドゾーン内の場合はノーツの縁の色を赤くする
+- 編集画面ダイアログはノーツ右側のBPM、スピード変化の書いてあるところを押すと出る
+- 編集画面ダイアログでは必要事項を記入してOKボタンを押す
+- 後から追加する
 
-Builds the app for production to the `build` folder.<br />
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### 密度表示
+- 密度表示はエディタ画面上部に横長に配置する
+- 横960pxくらいの長い棒にし、1列の中にある通常ノーツとアタックノーツの数を可視化
+- 960の長さをそのときどきの列数で割って、その値を1つの列の密度棒の太さとする
+- ある部分をクリックすることで曲の再生位置と対応するノーツの箇所を自動で調整
+    - 対応するノーツのある列が一番左に来るようにする
 
-The build is minified and the filenames include the hashes.<br />
-Your app is ready to be deployed!
+### mp3再生
+- 再生関連のプレイヤーバーは下部に設置
+- ▶ボタンを押すと再生、||ボタンを押すと停止、■ボタンを押すと停止しつつ再生位置を最初にする
+- ボタン群の隣に現在再生時間を表示
+- 再生速度調整スクロールで再生速度を4段階に調整する
+- 再生中も再生時間とBPMに合わせて棒がエディタ内を移動する
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### メニュー
+- 画面左のメニューボタンで出し入れできるようにする
+- メニュー画面では以下の操作ができる
+    - 曲情報編集
+        - 曲タイトル、アーティスト、アーティストURLの編集
+    - 背景色変更
+        - 2つのカラーマップと、譜面タイトル画面の再現を表示
+        - カラーマップの色を変更がタイトル画面にすぐ反映されて、視覚的に色を決められる
+    - 難易度選択、生成
+        - メニュー画面内でEASY、NORMAL、HARDを選択できる
+        - レベル表記を変更する場合は専用ダイアログを表示
+        - 専用ダイアログ内でまだ作られていない難易度の譜面の生成も行う
+    - テストプレイ
+        - テストプレイを行う
+        - 新しいタブを開いて現在の譜面情報とmp3データをPOSTして、新規タブページにSparebeatを表示
+        - できればmp3データを切り取って、該当部分のみをテストできるようにする(追加機能)
+    - 譜面ファイルのバックアップ
+        - ブラウザからローカルファイルを参照して上書き保存はできないため、localStorageとクリップボードに保存
+    - 譜面ファイルのダウンロード
+        - map.jsonという名前のファイルでダウンロード
+    - 設定
+        - アプリケーション全般の設定
+        - カラーテーマ、FPS、再生音量、背景画像等
+    
+## 使用言語、フレームワーク
+TypeScript + React + Redux
 
-### `yarn eject`
+これらの学習目的も兼ねる(create react appをこのディレクトリで行ったため、ソースは``project``内)
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
-
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
-
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
+## ライセンス
+MITライセンスでやろう
