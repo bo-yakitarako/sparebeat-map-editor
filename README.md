@@ -90,10 +90,11 @@ K-Shootエディタのような画面で譜面を直感的に作成すること�
         - アプリケーション全般の設定
         - カラーテーマ、FPS、再生音量、背景画像等
     
-## 使用言語、フレームワーク
-TypeScript + React + Redux
-
-これらの学習目的も兼ねる(create react appをこのディレクトリで行ったため、ソースは``project``内)
+## 技術
+- [TypeScript](https://www.typescriptlang.org/)
+- [React](https://ja.reactjs.org/)
+- [Redux](https://redux.js.org/)
+- [Blueprint](https://blueprintjs.com/)
 
 ## ライセンス
 MITライセンスでやろう
