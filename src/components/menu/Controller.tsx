@@ -1,4 +1,6 @@
 import * as React from 'react';
+import { useSelector } from "react-redux";
+import { AppState } from '../../store';
 import { NumericInput, Card, Elevation, Divider, Button, ButtonGroup, Slider } from '@blueprintjs/core';
 import { IconNames } from '@blueprintjs/icons';
 import Notes, { NotesStatus } from '../map/Notes';
@@ -7,8 +9,8 @@ const controllerStyle: React.CSSProperties = {
 	display: "inline-flex",
 	flexDirection: "column",
 	width: "200px",
-	minHeight: "calc(100vh - 50px)",
-	maxHeight: "calc(100vh - 50px)",
+	minHeight: "100%",
+	maxHeight: "100%",
 	textAlign: "left",
 	overflowY: 'scroll',
 };
@@ -22,43 +24,44 @@ const currentTimeCardStyle: React.CSSProperties = {
 const Controller = () => {
 	const putting = true;
 	const notesWidth = 60;
+	const loaded = useSelector((state: AppState) => state.editorSetting.loaded);
 	return (
 		<Card elevation={Elevation.TWO} style={controllerStyle}>
 			<p>Start Time</p>
-			<NumericInput placeholder="Start Time" style={{width: "120px"}} onValueChange={(value) => {console.log(value)}} />
+			<NumericInput disabled={!loaded} placeholder="Start Time" style={{width: "120px"}} onValueChange={(value) => {console.log(value)}} />
 			<Divider />
 			<p>ノーツオプション</p>
 			<ButtonGroup fill={true}>
-				<Button icon={IconNames.EDIT} active={true} />
-				<Button icon={IconNames.ERASER} />
-				<Button icon={IconNames.MUSIC} />
+				<Button disabled={!loaded} icon={IconNames.EDIT} active={loaded && true} />
+				<Button disabled={!loaded} icon={IconNames.ERASER} />
+				<Button disabled={!loaded} icon={IconNames.MUSIC} />
 			</ButtonGroup>
 			<ButtonGroup fill={true}>
-				<Button active={true} disabled={!putting}><Notes index={0} status={NotesStatus.NORMAL} width={notesWidth} /></Button>
-				<Button disabled={!putting}><Notes index={0} status={NotesStatus.NONE} width={notesWidth} /></Button>
+				<Button active={loaded && true} disabled={!putting || !loaded}><Notes index={0} status={NotesStatus.NORMAL} width={notesWidth} /></Button>
+				<Button disabled={!putting || !loaded}><Notes index={0} status={NotesStatus.ATTACK} width={notesWidth} /></Button>
 			</ButtonGroup>
 			<ButtonGroup fill={true}>
-				<Button disabled={!putting}><Notes index={0} status={NotesStatus.LONG_START} width={notesWidth} /></Button>
-				<Button disabled={!putting}><Notes index={0} status={NotesStatus.LONG_END} width={notesWidth} /></Button>
+				<Button disabled={!putting || !loaded}><Notes index={0} status={NotesStatus.LONG_START} width={notesWidth} /></Button>
+				<Button disabled={!putting || !loaded}><Notes index={0} status={NotesStatus.LONG_END} width={notesWidth} /></Button>
 			</ButtonGroup>
 			<Divider />
 				<p>ビートスナップ変更</p>
-				<Button icon={IconNames.EXCHANGE} text={`16分 → 24分`} />
+				<Button disabled={!loaded} icon={IconNames.EXCHANGE} text={`16分 → 24分`} />
 			<Divider />
 			<ButtonGroup fill={true} vertical={true}>
-				<Button icon={IconNames.UNDO} text='元に戻す' />
-				<Button icon={IconNames.REDO} text='やり直し' />
+				<Button disabled={!loaded} icon={IconNames.UNDO} text='元に戻す' />
+				<Button disabled={!loaded} icon={IconNames.REDO} text='やり直し' />
 			</ButtonGroup>
 			<Divider />
 			<p>Music Player</p>
-			<Card style={currentTimeCardStyle}>00:00</Card>
+			<Card style={currentTimeCardStyle}>00:00:00</Card>
 			<ButtonGroup fill={true}>
-				<Button icon={IconNames.PLAY} />
-				<Button icon={IconNames.STOP} />
+				<Button disabled={!loaded} icon={IconNames.PLAY} />
+				<Button disabled={!loaded} icon={IconNames.STOP} />
 			</ButtonGroup>
 			<br />
 			<p>再生位置</p>
-			<Slider max={1000} labelRenderer={false} value={500} />
+			<Slider disabled={!loaded} max={1000} labelRenderer={false} value={500} />
 			<br />
 			<p>再生速度</p>
 			<Slider max={4} intent="success" labelRenderer={false} value={2} />

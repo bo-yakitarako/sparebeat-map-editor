@@ -1,10 +1,25 @@
 import React from 'react';
 import { Classes } from '@blueprintjs/core';
+import { useSelector } from "react-redux";
+import { AppState } from '../store';
 import Menu from './menu/Menu';
 import Controller from './menu/Controller';
+import Map from './map/Map';
+
+const editorStyle: React.CSSProperties = {
+    display: 'flex',
+    flexDirection: 'row',
+    whiteSpace: 'nowrap',
+    overflowX: 'hidden',
+    maxWidth: '100%',
+    minWidth: '100%',
+    maxHeight: 'calc(100vh - 50px)',
+    minHeight: 'calc(100vh - 50px)',
+    textAlign: 'left',
+}
 
 function App() {
-    const isDark = false;
+    const isDark = useSelector((state: AppState) => state.editorSetting.themeBlack);
     return (
         <div
             className={isDark ? Classes.DARK : ""}
@@ -15,8 +30,9 @@ function App() {
             }}
         >
             <Menu/>
-            <div style={{textAlign: "left"}}>
+            <div style={editorStyle}>
                 <Controller />
+                <Map />
             </div>
         </div>
     );
