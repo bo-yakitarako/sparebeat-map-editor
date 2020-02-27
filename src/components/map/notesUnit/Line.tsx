@@ -1,20 +1,34 @@
 import * as React from 'react';
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { AppState } from '../../../store';
 import Notes, { NotesStatus } from '../Notes';
+import mapStateModule from '../../../modules/mapState';
+import { NotesMode, EditMode } from 'modules/editorSetting';
 
 interface ILine {
-	notesIndex: number;
+	lineIndex: number;
 	innerBeatIndex: number;
 	snap24: boolean;
+	centerLine?: boolean;
+}
+
+export interface IChangeNotesStatus {
+	lineIndex: number;
+	laneIndex: number;
+	newStatus: NotesStatus;
 }
 
 const Line: React.SFC<ILine> = (props: ILine) => {
+	const dispatch = useDispatch();
 	const notesWidth = useSelector((state: AppState) => state.editorSetting.notesDisplay.notesWidth);
+	const intervalRatio = useSelector((state: AppState) => state.editorSetting.notesDisplay.intervalRatio);
+	const notesAspect = useSelector((state: AppState) => state.editorSetting.notesDisplay.aspect);
 	const isDark = useSelector((state: AppState) => state.editorSetting.themeBlack);
-	const height = notesWidth / 2.5;
-	const location = (props.snap24 ? 1 : 1.5) * props.innerBeatIndex * height;
-	const isBarLine = props.notesIndex === 0;
+	const editMode = useSelector((state: AppState) => state.editorSetting.editMode);
+	const addNotes = useSelector((state: AppState) => state.editorSetting.notesMode);
+	const lineState = useSelector((state: AppState) => state.mapState.current.lines)[props.lineIndex];
+	const height = notesWidth / notesAspect;
+	const location = (props.snap24 ? 1 : 1.5) * props.innerBeatIndex * height * intervalRatio;
 	const lineStyle: React.CSSProperties = {
 		position: 'absolute',
 		left: '0',
@@ -47,22 +61,36 @@ const Line: React.SFC<ILine> = (props: ILine) => {
 			cursor: 'pointer',
 			zIndex: 1,
 		}}>
-			<div style={{position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)'}}>190</div>
-			{isBarLine ? <div style={barLineStyle}></div> : null}
+			<div style={{position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)'}}>
+				{lineState.bpm ? lineState.bpm : lineState.speed ? `× ${lineState.speed.toFixed(1)}` : ''}
+			</div>
+			{lineState.barLine ? <div style={barLineStyle}></div> : null}
 		</div>
 	);
-	const statuses = [
-		props.notesIndex % 4 === 0 ? NotesStatus.NORMAL : NotesStatus.NONE,
-		props.notesIndex % 4 === 1 ? NotesStatus.NORMAL : NotesStatus.NONE,
-		props.notesIndex % 4 === 2 ? NotesStatus.NORMAL : NotesStatus.NONE,
-		props.notesIndex % 4 === 3 ? NotesStatus.NORMAL : NotesStatus.NONE,
-	];
+	const convertNotesStatus = (editMode: EditMode, addNotes: NotesMode) => {
+		return editMode === 'remove' ? NotesStatus.NONE :
+			addNotes === 'normal' ? NotesStatus.NORMAL :
+				addNotes === 'attack' ? NotesStatus.ATTACK :
+					addNotes === 'longStart' ? NotesStatus.LONG_START :
+						NotesStatus.LONG_END;
+	}
+	const changeNotes = (index: number) => () => {
+		const notesStatus = convertNotesStatus(editMode, addNotes);
+		if (editMode !== 'music' && notesStatus !== lineState.status[index]) {
+			const changeStatus: IChangeNotesStatus = {
+				lineIndex: props.lineIndex,
+				laneIndex: index,
+				newStatus: notesStatus,
+			};
+			dispatch(mapStateModule.actions.changeNotesStatus(changeStatus));
+		}
+	}
 	return (
 		<div style={lineStyle}>
-			{statuses.map((value, index) => {
-				return <Notes key={index} index={index} width={notesWidth} status={value} />
+			{lineState.status.map((value, index) => {
+				return <Notes key={index} index={index} width={notesWidth} status={value} aspect={notesAspect} onClick={changeNotes(index)} centerLine={props.centerLine} />
 			})}
-			{props.notesIndex === 0 ? notesOption : null}
+			{notesOption}
 		</div>
 	);
 };

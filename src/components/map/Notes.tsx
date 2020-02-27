@@ -11,6 +11,8 @@ interface INotes {
 	index: number;
 	width: number;
 	status: NotesStatus;
+	aspect?: number;
+	centerLine?: boolean;
 	onClick?: Function;
 };
 
@@ -19,7 +21,7 @@ const notesColors: {[key: string]: string[]} = {
 }
 
 const NotesComponent: React.SFC<INotes> = (props: INotes) => {
-	const height = props.width / 2.5;
+	const height = props.width / (props.aspect ? props.aspect : 2.5);
 	const boxStyle: React.CSSProperties = {
 		position: 'relative',
 		display: 'inline-block',
@@ -41,9 +43,9 @@ const NotesComponent: React.SFC<INotes> = (props: INotes) => {
 		const barLineStyle: React.CSSProperties = {
 			position: 'absolute',
 			left: `0px`,
-			top: `${height / 2 - 0.5}px`,
+			top: `${height / 2 - 1.5}px`,
 			width: `100%`,
-			height: '1px',
+			height: '3px',
 			backgroundColor: isDark ? "#BFCCD6" : "#5C7080",
 			zIndex: 1,
 		};
@@ -65,7 +67,7 @@ const NotesComponent: React.SFC<INotes> = (props: INotes) => {
 			notes = (
 				<span style={boxStyle} onClick={click}>
 					<Polyline points={diamondPointsValue} fill={{ color: fillColor }} stroke={{ color: isDark ? "#BFCCD6" : "#5C7080"}} strokeWidth={strokeWidth} />
-					<div style={barLineStyle}></div>
+					{props.centerLine ? <div style={barLineStyle}></div> : null}
 					<span style={lnTokenStyle}>{tokenText}</span>
 				</span>
 			);
@@ -73,7 +75,7 @@ const NotesComponent: React.SFC<INotes> = (props: INotes) => {
 			notes = (
 				<span style={boxStyle} onClick={click}>
 					<Polyline points={diamondPointsValue} fill={{ color: fillColor }} stroke={{ color: isDark ? "#BFCCD6" : "#5C7080"}} strokeWidth={strokeWidth} />
-					<div style={barLineStyle}></div>
+					{props.centerLine ? <div style={barLineStyle}></div> : null}
 				</span>
 			);
 		}

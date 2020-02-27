@@ -1,9 +1,11 @@
 import * as React from 'react';
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { AppState } from '../../store';
 import { NumericInput, Card, Elevation, Divider, Button, ButtonGroup, Slider } from '@blueprintjs/core';
 import { IconNames } from '@blueprintjs/icons';
 import Notes, { NotesStatus } from '../map/Notes';
+import mapStateModule from '../../modules/mapState';
+import editorSettingModule, { EditMode, NotesMode } from '../../modules/editorSetting';
 
 const controllerStyle: React.CSSProperties = {
 	display: "inline-flex",
@@ -22,9 +24,19 @@ const currentTimeCardStyle: React.CSSProperties = {
 }
 
 const Controller = () => {
+	const dispatch = useDispatch();
 	const putting = true;
 	const notesWidth = 60;
 	const loaded = useSelector((state: AppState) => state.editorSetting.loaded);
+	const editMode = useSelector((state: AppState) => state.editorSetting.editMode);
+	const notesMode = useSelector((state: AppState) => state.editorSetting.notesMode);
+	const mapState = useSelector((state: AppState) => state.mapState.current);
+	const changeEdit = (mode: EditMode) => () => {
+		dispatch(editorSettingModule.actions.changeEditMode(mode));
+	}
+	const changeNotes = (mode: NotesMode) => () => {
+		dispatch(editorSettingModule.actions.changeNotesMode(mode));
+	}
 	return (
 		<Card elevation={Elevation.TWO} style={controllerStyle}>
 			<p>Start Time</p>
@@ -32,25 +44,25 @@ const Controller = () => {
 			<Divider />
 			<p>ノーツオプション</p>
 			<ButtonGroup fill={true}>
-				<Button disabled={!loaded} icon={IconNames.EDIT} active={loaded && true} />
-				<Button disabled={!loaded} icon={IconNames.ERASER} />
-				<Button disabled={!loaded} icon={IconNames.MUSIC} />
+				<Button disabled={!loaded} icon={IconNames.EDIT} active={loaded && editMode === 'add'} onClick={changeEdit('add')} />
+				<Button disabled={!loaded} icon={IconNames.ERASER} active={loaded && editMode === 'remove'} onClick={changeEdit('remove')} />
+				<Button disabled={!loaded} icon={IconNames.MUSIC} active={loaded && editMode === 'music'} onClick={changeEdit('music')} />
 			</ButtonGroup>
 			<ButtonGroup fill={true}>
-				<Button active={loaded && true} disabled={!putting || !loaded}><Notes index={0} status={NotesStatus.NORMAL} width={notesWidth} /></Button>
-				<Button disabled={!putting || !loaded}><Notes index={0} status={NotesStatus.ATTACK} width={notesWidth} /></Button>
+				<Button active={loaded && notesMode === 'normal'} disabled={!putting || !loaded || editMode !== 'add'}><Notes index={0} status={NotesStatus.NORMAL} width={notesWidth} onClick={changeNotes('normal')} /></Button>
+				<Button active={loaded && notesMode === 'attack'} disabled={!putting || !loaded || editMode !== 'add'}><Notes index={0} status={NotesStatus.ATTACK} width={notesWidth} onClick={changeNotes('attack')} /></Button>
 			</ButtonGroup>
 			<ButtonGroup fill={true}>
-				<Button disabled={!putting || !loaded}><Notes index={0} status={NotesStatus.LONG_START} width={notesWidth} /></Button>
-				<Button disabled={!putting || !loaded}><Notes index={0} status={NotesStatus.LONG_END} width={notesWidth} /></Button>
+				<Button active={loaded && notesMode === 'longStart'} disabled={!putting || !loaded || editMode !== 'add'}><Notes index={0} status={NotesStatus.LONG_START} width={notesWidth} onClick={changeNotes('longStart')} /></Button>
+				<Button active={loaded && notesMode === 'longEnd'} disabled={!putting || !loaded || editMode !== 'add'}><Notes index={0} status={NotesStatus.LONG_END} width={notesWidth} onClick={changeNotes('longEnd')} /></Button>
 			</ButtonGroup>
 			<Divider />
 				<p>ビートスナップ変更</p>
-				<Button disabled={!loaded} icon={IconNames.EXCHANGE} text={`16分 → 24分`} />
+				<Button disabled={!loaded} icon={IconNames.EXCHANGE} text={`1/4 ${mapState.snap24 ? '←' : '→'} 1/6`} onClick={() => dispatch(mapStateModule.actions.changeSnap())} />
 			<Divider />
 			<ButtonGroup fill={true} vertical={true}>
-				<Button disabled={!loaded} icon={IconNames.UNDO} text='元に戻す' />
-				<Button disabled={!loaded} icon={IconNames.REDO} text='やり直し' />
+				<Button disabled={!loaded || mapState.historyIndex === 0} icon={IconNames.UNDO} text='元に戻す' onClick={() => dispatch(mapStateModule.actions.undo())} />
+				<Button disabled={!loaded || mapState.historyIndex === mapState.linesHistory.length - 1} icon={IconNames.REDO} text='やり直し' onClick={() => dispatch(mapStateModule.actions.redo())} />
 			</ButtonGroup>
 			<Divider />
 			<p>Music Player</p>

@@ -10,8 +10,10 @@ interface IHalfBeat {
 
 const HalfBeat: React.SFC<IHalfBeat> = (props: IHalfBeat) => {
 	const notesWidth = useSelector((state: AppState) => state.editorSetting.notesDisplay.notesWidth);
+	const intervalRatio = useSelector((state: AppState) => state.editorSetting.notesDisplay.intervalRatio);
+	const notesAspect = useSelector((state: AppState) => state.editorSetting.notesDisplay.aspect);
 	const snap24 = props.notesIndexes.length === 3;
-	const halfBeatHeight = 3 * notesWidth / 2.5;
+	const halfBeatHeight = 3 * notesWidth / notesAspect * intervalRatio;
 	const beatStyle: React.CSSProperties = {
 		position: 'absolute',
 		left: '0',
@@ -22,7 +24,7 @@ const HalfBeat: React.SFC<IHalfBeat> = (props: IHalfBeat) => {
 	return (
 		<div style={beatStyle}>
 			{props.notesIndexes.map((notesIndex, beatIndex) =>
-				<Line key={beatIndex} notesIndex={notesIndex} innerBeatIndex={beatIndex} snap24={snap24} />
+				<Line key={beatIndex} lineIndex={notesIndex} innerBeatIndex={beatIndex} snap24={snap24} centerLine={props.halfBeatIndex % 2 === 0 && beatIndex === 0} />
 			)}
 		</div>
 	)
