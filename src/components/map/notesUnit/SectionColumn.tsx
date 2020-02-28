@@ -7,19 +7,20 @@ import { IconNames } from '@blueprintjs/icons';
 import mapStateModule from '../../../modules/mapState';
 
 interface ISectionColumn {
+	id?: number;
 	sectionIndex: number;
-	sectionLength: number;
 	halfBeats: Array<number[]>;
 }
 
 const SectionColumn: React.SFC<ISectionColumn> = (props: ISectionColumn) => {
 	const dispatch = useDispatch();
-	const isDark = useSelector((state: AppState) => state.editorSetting.themeBlack);
-	const column = useSelector((state: AppState) => state.editorSetting.notesDisplay.column);
-	const notesWidth = useSelector((state: AppState) => state.editorSetting.notesDisplay.notesWidth);
-	const intervalRatio = useSelector((state: AppState) => state.editorSetting.notesDisplay.intervalRatio);
-	const notesAspect = useSelector((state: AppState) => state.editorSetting.notesDisplay.aspect);
-	const lines = useSelector((state: AppState) => state.editorSetting.notesDisplay.lines);
+	const setting = useSelector((state: AppState) => state.editorSetting); 
+	const isDark = setting.themeBlack;
+	const notesWidth = setting.notesDisplay.notesWidth;
+	const intervalRatio = setting.notesDisplay.intervalRatio;
+	const notesAspect = setting.notesDisplay.aspect;
+	const lines = setting.notesDisplay.lines;
+	const barPos = setting.barPos;
 	const notesHeignt = notesWidth / notesAspect;
 	const height = (lines / 2) * (3 * notesHeignt) * intervalRatio;
 	const endBeat = props.halfBeats[props.halfBeats.length - 1];
@@ -42,19 +43,29 @@ const SectionColumn: React.SFC<ISectionColumn> = (props: ISectionColumn) => {
 		};
 		return style;
 	};
+	const playBarStyle: React.CSSProperties = {
+		position: 'absolute',
+		width: notesWidth * 4,
+		height: setting.barWidth,
+		backgroundColor: '#cece9e',
+		left: 0,
+		zIndex: 3,
+	};
+
 	return (
 		<div style={{ position: 'relative', display: 'inline-block', marginLeft: 20, width: `${notesWidth * 5}px`}}>
 			<div style={{ position: 'relative', width: '80%', marginBottom: notesWidth / 5 }}>
-				{props.sectionIndex > 0 ? <Button icon={IconNames.DELETE} minimal={true} style={{ width: notesWidth, height: notesHeignt, }} onClick={() => dispatch(mapStateModule.actions.removeSection({...props, column: column}))} /> : null}
+				{props.sectionIndex > 0 ? <Button icon={IconNames.DELETE} minimal={true} style={{ width: notesWidth, height: notesHeignt, }} onClick={() => dispatch(mapStateModule.actions.removeSection(props.halfBeats))} /> : null}
 				<span style={{position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', fontSize: notesWidth / 3}}>{props.sectionIndex + 1}</span>
 				<Button icon={IconNames.ADD} minimal={true} style={{ width: notesWidth, height: notesHeignt, marginLeft: notesWidth * (props.sectionIndex > 0 ? 2 : 3), }} onClick={() => dispatch(mapStateModule.actions.addSection({insertIndex: endIndex, lines: lines}))} />
 			</div>
-			<div style={sectionStyle}>
+			<div id={`section${props.id}`} style={sectionStyle} >
 				{props.halfBeats.map((value, index) => <HalfBeat key={index} halfBeatIndex={index} notesIndexes={value} />)}
 				{[0, 1, 2, 3, 4].map((value) => {
 					return <div key={value} style={laneLineStyle(value * notesWidth)}></div>
 				})}
 			</div>
+			{barPos.section === props.sectionIndex ? <div style={{...playBarStyle, bottom: barPos.pos}}></div> : null}
 		</div>
 	);
 };

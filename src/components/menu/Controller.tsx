@@ -23,6 +23,9 @@ const currentTimeCardStyle: React.CSSProperties = {
 	fontSize: '24px',
 }
 
+const music = new Audio('media/Grievous_Lady.mp3');
+music.volume = 0.1;
+
 const Controller = () => {
 	const dispatch = useDispatch();
 	const putting = true;
@@ -30,13 +33,21 @@ const Controller = () => {
 	const loaded = useSelector((state: AppState) => state.editorSetting.loaded);
 	const editMode = useSelector((state: AppState) => state.editorSetting.editMode);
 	const notesMode = useSelector((state: AppState) => state.editorSetting.notesMode);
+	const barPos = useSelector((state: AppState) => state.editorSetting.barPos);
 	const mapState = useSelector((state: AppState) => state.mapState.current);
+	const bpmChanges = mapState.bpmChanges;
 	const changeEdit = (mode: EditMode) => () => {
 		dispatch(editorSettingModule.actions.changeEditMode(mode));
 	}
 	const changeNotes = (mode: NotesMode) => () => {
 		dispatch(editorSettingModule.actions.changeNotesMode(mode));
 	}
+	music.ontimeupdate = () => {
+		dispatch(editorSettingModule.actions.updateBarPos({time: music.currentTime, bpmChanges: bpmChanges}));
+		console.log(barPos);
+	};
+	// setInterval(() => {
+	// }, 1000);
 	return (
 		<Card elevation={Elevation.TWO} style={controllerStyle}>
 			<p>Start Time</p>
@@ -68,8 +79,12 @@ const Controller = () => {
 			<p>Music Player</p>
 			<Card style={currentTimeCardStyle}>00:00:00</Card>
 			<ButtonGroup fill={true}>
-				<Button disabled={!loaded} icon={IconNames.PLAY} />
-				<Button disabled={!loaded} icon={IconNames.STOP} />
+				<Button disabled={!loaded} icon={IconNames.PLAY} onClick={() => {
+					music.play();
+				}} />
+				<Button disabled={!loaded} icon={IconNames.STOP} onClick={() => {
+					music.pause();
+				}} />
 			</ButtonGroup>
 			<br />
 			<p>再生位置</p>

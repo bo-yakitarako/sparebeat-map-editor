@@ -26,9 +26,11 @@ const Line: React.SFC<ILine> = (props: ILine) => {
 	const isDark = useSelector((state: AppState) => state.editorSetting.themeBlack);
 	const editMode = useSelector((state: AppState) => state.editorSetting.editMode);
 	const addNotes = useSelector((state: AppState) => state.editorSetting.notesMode);
-	const lineState = useSelector((state: AppState) => state.mapState.current.lines)[props.lineIndex];
+	const lineState = useSelector((state: AppState) => state.mapState.current.lines);
+	const currentLineState = lineState[props.lineIndex];
 	const height = notesWidth / notesAspect;
 	const location = (props.snap24 ? 1 : 1.5) * props.innerBeatIndex * height * intervalRatio;
+	const canDisplayBpm = props.lineIndex === 0 || currentLineState.bpm !== lineState[props.lineIndex - 1].bpm;
 	const lineStyle: React.CSSProperties = {
 		position: 'absolute',
 		left: '0',
@@ -62,9 +64,9 @@ const Line: React.SFC<ILine> = (props: ILine) => {
 			zIndex: 1,
 		}}>
 			<div style={{position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)'}}>
-				{lineState.bpm ? lineState.bpm : lineState.speed ? `× ${lineState.speed.toFixed(1)}` : ''}
+				{canDisplayBpm ? currentLineState.bpm : currentLineState.speed ? `× ${currentLineState.speed.toFixed(1)}` : ''}
 			</div>
-			{lineState.barLine ? <div style={barLineStyle}></div> : null}
+			{currentLineState.barLine ? <div style={barLineStyle}></div> : null}
 		</div>
 	);
 	const convertNotesStatus = (editMode: EditMode, addNotes: NotesMode) => {
@@ -76,7 +78,7 @@ const Line: React.SFC<ILine> = (props: ILine) => {
 	}
 	const changeNotes = (index: number) => () => {
 		const notesStatus = convertNotesStatus(editMode, addNotes);
-		if (editMode !== 'music' && notesStatus !== lineState.status[index]) {
+		if (editMode !== 'music' && notesStatus !== currentLineState.status[index]) {
 			const changeStatus: IChangeNotesStatus = {
 				lineIndex: props.lineIndex,
 				laneIndex: index,
@@ -87,7 +89,7 @@ const Line: React.SFC<ILine> = (props: ILine) => {
 	}
 	return (
 		<div style={lineStyle}>
-			{lineState.status.map((value, index) => {
+			{currentLineState.status.map((value, index) => {
 				return <Notes key={index} index={index} width={notesWidth} status={value} aspect={notesAspect} onClick={changeNotes(index)} centerLine={props.centerLine} />
 			})}
 			{notesOption}

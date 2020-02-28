@@ -1,13 +1,13 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { cloneDeep } from 'lodash';
 import { NotesStatus } from '../components/map/Notes';
 import { IChangeNotesStatus } from '../components/map/notesUnit/Line';
-import { cloneDeep } from 'lodash';
 
 export interface INotesLineState {
 	status: NotesStatus[];
 	snap24: boolean;
+	bpm: number;
 	section?: boolean;
-	bpm?: number;
 	speed?: number;
 	barLine?: boolean;
 }
@@ -16,14 +16,17 @@ export interface IMapState {
 	bpm: number;
 	snap24: boolean;
 	currentSection: number;
+	sectionLength: number;
 	lines: INotesLineState[];
 	linesHistory: INotesLineState[][];
 	historyIndex: number;
+	bpmChanges: {bpm: number, time: number}[];
 }
 
 export type DifficlutySelect = 'easy' | 'normal' | 'hard';
-interface IMapStateParDifficulty {
-	startTime: number;
+export interface IMapStateParDifficulty {
+	column: number;
+	sectionLineCount: number;
 	current: IMapState;
 	easy: IMapState;
 	normal: IMapState;
@@ -32,12 +35,12 @@ interface IMapStateParDifficulty {
 }
 
 const initialNotesStatus = [NotesStatus.NONE, NotesStatus.NONE, NotesStatus.NONE, NotesStatus.NONE];
-const initialMapState: IMapState = {bpm: 150, snap24: false, currentSection: 0, lines: [], linesHistory: [], historyIndex: 0 };
+
+const initialMapState: IMapState = { bpm: 210, snap24: false, currentSection: 0, sectionLength: 4, lines: [], linesHistory: [], historyIndex: 0, bpmChanges: [{bpm: 210, time: 0}] };
 for (let i = 0; i < 64; i++) {
-	const lineState: INotesLineState = { status: [...initialNotesStatus], snap24: false };
+	const lineState: INotesLineState = { status: [...initialNotesStatus], snap24: false, bpm: initialMapState.bpm };
 	if (i === 0) {
 		lineState.barLine = lineState.section = true;
-		lineState.bpm = 150;
 		lineState.speed = 1.0;
 	}
 	initialMapState.lines.push(lineState);
@@ -45,7 +48,8 @@ for (let i = 0; i < 64; i++) {
 initialMapState.linesHistory.push(initialMapState.lines);
 
 const initialState: IMapStateParDifficulty = {
-	startTime: 0,
+	column: 4,
+	sectionLineCount: 16,
 	current: initialMapState,
 	easy: initialMapState,
 	normal: cloneDeep<IMapState>(initialMapState),
@@ -63,6 +67,14 @@ const pushHistory = (state: IMapState, notesLineState: INotesLineState[], histor
 		state.historyIndex = historySize - 1;
 	}
 };
+const adjustCurrentSection = (state: IMapStateParDifficulty, target: number) => {
+	if (state.current.currentSection > state.current.sectionLength - state.column - target) {
+		state.current.currentSection = state.current.sectionLength - state.column - target;
+		if (state.current.currentSection < 0) {
+			state.current.currentSection = 0;
+		}
+	}
+}
 
 const mapStateModule = createSlice({
 	name: 'notesState',
@@ -74,22 +86,20 @@ const mapStateModule = createSlice({
 			state.current.lines[line].status[lane] = action.payload.newStatus;
 			pushHistory(state.current, state.current.lines, state.historySize);
 		},
-		addSection: (state, action: PayloadAction<{insertIndex: number, lines: number}>) => {
+		addSection: (state, action: PayloadAction<{ insertIndex: number, lines: number }>) => {
 			const snap24 = state.current.snap24;
+
 			for (let i = 0; i < action.payload.lines * (snap24 ? 1.5 : 1); i++) {
-				const addLine: INotesLineState = {status: [...initialNotesStatus], snap24: snap24};
+				const addLine: INotesLineState = { status: [...initialNotesStatus], snap24: snap24, bpm: state.current.lines[action.payload.insertIndex].bpm };
 				state.current.lines.splice(action.payload.insertIndex + i, 0, addLine);
 			}
+			state.current.sectionLength++;
 			pushHistory(state.current, state.current.lines, state.historySize);
 		},
-		removeSection: (state, action: PayloadAction<{sectionIndex: number, sectionLength: number, halfBeats: number[][], column: number}>) => {
-			if (action.payload.sectionIndex > action.payload.sectionLength - action.payload.column - 1) {
-				state.current.currentSection = action.payload.sectionLength - action.payload.column - 1;
-				if (state.current.currentSection < 0) {
-					state.current.currentSection = 0;
-				}
-			}
-			removeSection(state.current, action.payload.halfBeats);
+		removeSection: (state, action: PayloadAction<number[][]>) => {
+			adjustCurrentSection(state, -1);
+			removeSection(state.current, action.payload);
+			state.current.sectionLength--;
 			pushHistory(state.current, state.current.lines, state.historySize);
 		},
 		changeSnap: (state) => {
@@ -110,6 +120,8 @@ const mapStateModule = createSlice({
 				state.current.historyIndex = 0;
 			}
 			state.current.lines = state.current.linesHistory[state.current.historyIndex];
+			state.current.sectionLength = assignSection(state.current.lines, state.sectionLineCount).length;
+			adjustCurrentSection(state, 0);
 		},
 		redo: (state) => {
 			state.current.historyIndex++;
@@ -117,6 +129,8 @@ const mapStateModule = createSlice({
 				state.current.historyIndex = state.current.linesHistory.length - 1;
 			}
 			state.current.lines = state.current.linesHistory[state.current.historyIndex];
+			state.current.sectionLength = assignSection(state.current.lines, state.sectionLineCount).length;
+			adjustCurrentSection(state, 0);
 		},
 	}
 });
@@ -151,6 +165,7 @@ function changeBeatSnap(mapState: IMapState, startIndex: number) {
 				const newLine: INotesLineState = {
 					status: [NotesStatus.NONE, NotesStatus.NONE, NotesStatus.NONE, NotesStatus.NONE],
 					snap24: true,
+					bpm: mapState.lines[index].bpm,
 				}
 				mapState.lines.splice(startIndex + 1, 0, newLine);
 				index += 3;
@@ -203,3 +218,16 @@ function removeSection(state: IMapState, halfBeats: number[][]) {
 	const endIndex = endBeat[endBeat.length - 1];
 	state.lines = state.lines.filter((value, index) => index < startIndex || endIndex < index);
 }
+
+// function getBpmChanges(mapState: IMapState) {
+// 	let time = 0;
+// 	const bpmChanges = [] as { bpm: number, time: number }[];
+// 	for (let i = 1; i < mapState.lines.length; i++) {
+// 		const line = mapState.lines[i - 1];
+// 		if (line.bpm !== mapState.lines[i].bpm || i === 1) {
+// 			bpmChanges.push({ bpm: line.bpm, time: time });
+// 		}
+// 		time += (line.snap24 ? 10 : 15) / line.bpm;
+// 	}
+// 	return bpmChanges;
+// }
