@@ -1,12 +1,8 @@
-export interface IMusicBar {
-	barWidth: number;
-	notesHeight: number;
-	lines: number;
-	intervalRatio: number;
-	bpmChanges: {
-		bpm: number;
-		time: number;
-	}[];
+import { IEditorState } from './editorModule';
+
+export interface IBpmChanges {
+	bpm: number;
+	time: number;
 }
 
 export interface IClap {
@@ -22,20 +18,19 @@ export type SectionPos = {
 
 export default class MusicBar {
 	private barWidth: number;
+	private startTime: number;
 	private notesHeight: number;
 	private lines: number;
 	private intervalRatio: number;
-	private bpmChanges: {
-		bpm: number;
-		time: number;
-	}[];
+	private bpmChanges: IBpmChanges[];
 
-	constructor(props: IMusicBar) {
-		this.barWidth = props.barWidth;
-		this.notesHeight = props.notesHeight;
-		this.lines = props.lines;
-		this.intervalRatio = props.intervalRatio;
-		this.bpmChanges = [...props.bpmChanges];
+	constructor(setting: IEditorState, bpmChanges: IBpmChanges[]) {
+		this.barWidth = setting.barWidth;
+		this.startTime = setting.startTime;
+		this.notesHeight = setting.notesDisplay.notesWidth / setting.notesDisplay.aspect;
+		this.lines = setting.notesDisplay.sectionLineCount;
+		this.intervalRatio = setting.notesDisplay.intervalRatio;
+		this.bpmChanges = [...bpmChanges];
 	}
 
 	private get sectinHeight() {
@@ -45,6 +40,7 @@ export default class MusicBar {
 	private calcPos = (time: number, bpm: number) => time * bpm * this.notesHeight * this.intervalRatio / 10;
 
 	public currentPosition(time: number): SectionPos {
+		time -= this.startTime / 1000;
 		const effectiveBpm = this.bpmChanges.filter((value) => value.time < time);
 		effectiveBpm.push({bpm: 0, time: time});
 		let pos = 0;
@@ -62,12 +58,12 @@ export default class MusicBar {
 		const calcTime = (pos: number, bpm: number) => 10 * pos / (bpm * this.notesHeight * this.intervalRatio);
 		const calcBpmPos = (i: number) => this.calcPos(this.bpmChanges[i + 1].time - this.bpmChanges[i].time, this.bpmChanges[i].bpm);
 		const pos = this.sectinHeight * sectionPos.section + sectionPos.pos - (this.notesHeight - this.barWidth) / 2;
-		let bpmPos = 0, add = this.bpmChanges.length > 0 ? calcBpmPos(0) : 0, i = 0;
+		let bpmPos = 0, add = this.bpmChanges.length > 1 ? calcBpmPos(0) : 0, i = 0;
 		while (i < this.bpmChanges.length - 1 && bpmPos + add < pos) {
 			i++;
 			bpmPos += add;
-			add = i < this.bpmChanges.length - 2 ? calcBpmPos(i) : 0;
+			add = i < this.bpmChanges.length - 1 ? calcBpmPos(i) : 0;
 		}
-		return this.bpmChanges[i].time + calcTime(pos - bpmPos, this.bpmChanges[i].bpm);
+		return this.bpmChanges[i].time + calcTime(pos - bpmPos, this.bpmChanges[i].bpm) + this.startTime / 1000;
 	}
 }

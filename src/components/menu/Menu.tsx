@@ -5,7 +5,7 @@ import { Button, Navbar, NavbarDivider, NavbarGroup, NavbarHeading, Alignment, C
 import { IconNames } from '@blueprintjs/icons';
 
 const Menu = () => {
-	const loaded = useSelector((state: AppState) => state.editorSetting.loaded);
+	const loaded = useSelector((state: AppState) => state.loaded);
 	return (
 		<Navbar style={{height: '50px'}}>
 			<NavbarGroup align={Alignment.LEFT}>

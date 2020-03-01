@@ -19,7 +19,7 @@ const editorStyle: React.CSSProperties = {
 }
 
 function App() {
-    const isDark = useSelector((state: AppState) => state.editorSetting.themeBlack);
+    const isDark = useSelector((state: AppState) => state.themeBlack);
     return (
         <div
             className={isDark ? Classes.DARK : ""}

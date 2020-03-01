@@ -2,14 +2,14 @@ import * as React from 'react';
 import { useSelector, useDispatch } from "react-redux";
 import { AppState } from '../../../store';
 import Notes, { NotesStatus } from '../Notes';
-import mapStateModule from '../../../modules/mapState';
-import { NotesMode, EditMode } from 'modules/editorSetting';
+import mapStateModule, { EditMode, NotesMode } from '../../../modules/editorModule';
 
 interface ILine {
 	lineIndex: number;
 	innerBeatIndex: number;
 	snap24: boolean;
 	centerLine?: boolean;
+	sectionFirst?: boolean;
 }
 
 export interface IChangeNotesStatus {
@@ -20,17 +20,19 @@ export interface IChangeNotesStatus {
 
 const Line: React.SFC<ILine> = (props: ILine) => {
 	const dispatch = useDispatch();
-	const notesWidth = useSelector((state: AppState) => state.editorSetting.notesDisplay.notesWidth);
-	const intervalRatio = useSelector((state: AppState) => state.editorSetting.notesDisplay.intervalRatio);
-	const notesAspect = useSelector((state: AppState) => state.editorSetting.notesDisplay.aspect);
-	const isDark = useSelector((state: AppState) => state.editorSetting.themeBlack);
-	const editMode = useSelector((state: AppState) => state.editorSetting.editMode);
-	const addNotes = useSelector((state: AppState) => state.editorSetting.notesMode);
-	const lineState = useSelector((state: AppState) => state.mapState.current.lines);
+	const notesWidth = useSelector((state: AppState) => state.notesDisplay.notesWidth);
+	const intervalRatio = useSelector((state: AppState) => state.notesDisplay.intervalRatio);
+	const notesAspect = useSelector((state: AppState) => state.notesDisplay.aspect);
+	const isDark = useSelector((state: AppState) => state.themeBlack);
+	const editMode = useSelector((state: AppState) => state.editMode);
+	const addNotes = useSelector((state: AppState) => state.notesMode);
+	const lineState = useSelector((state: AppState) => state.current.lines);
 	const currentLineState = lineState[props.lineIndex];
 	const height = notesWidth / notesAspect;
 	const location = (props.snap24 ? 1 : 1.5) * props.innerBeatIndex * height * intervalRatio;
-	const canDisplayBpm = props.lineIndex === 0 || currentLineState.bpm !== lineState[props.lineIndex - 1].bpm;
+	const bpmChanging = props.lineIndex === 0 || currentLineState.bpm !== lineState[props.lineIndex - 1].bpm;
+	const speedChanging = props.lineIndex === 0 || currentLineState.speed !== lineState[props.lineIndex - 1].speed;
+	const isBarLine = currentLineState.barLine && (props.sectionFirst || bpmChanging || speedChanging);
 	const lineStyle: React.CSSProperties = {
 		position: 'absolute',
 		left: '0',
@@ -64,9 +66,9 @@ const Line: React.SFC<ILine> = (props: ILine) => {
 			zIndex: 1,
 		}}>
 			<div style={{position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)'}}>
-				{canDisplayBpm ? currentLineState.bpm : currentLineState.speed ? `× ${currentLineState.speed.toFixed(1)}` : ''}
+				{bpmChanging ? currentLineState.bpm : currentLineState.speed ? `× ${currentLineState.speed.toFixed(1)}` : ''}
 			</div>
-			{currentLineState.barLine ? <div style={barLineStyle}></div> : null}
+			{isBarLine ? <div style={barLineStyle}></div> : null}
 		</div>
 	);
 	const convertNotesStatus = (editMode: EditMode, addNotes: NotesMode) => {

@@ -4,7 +4,7 @@ import { AppState } from '../../../store';
 import { Button } from '@blueprintjs/core';
 import HalfBeat from './HalfBeat';
 import { IconNames } from '@blueprintjs/icons';
-import mapStateModule from '../../../modules/mapState';
+import mapStateModule from '../../../modules/editorModule';
 
 interface ISectionColumn {
 	id?: number;
@@ -14,12 +14,12 @@ interface ISectionColumn {
 
 const SectionColumn: React.SFC<ISectionColumn> = (props: ISectionColumn) => {
 	const dispatch = useDispatch();
-	const setting = useSelector((state: AppState) => state.editorSetting); 
+	const setting = useSelector((state: AppState) => state);
 	const isDark = setting.themeBlack;
 	const notesWidth = setting.notesDisplay.notesWidth;
 	const intervalRatio = setting.notesDisplay.intervalRatio;
 	const notesAspect = setting.notesDisplay.aspect;
-	const lines = setting.notesDisplay.lines;
+	const lines = setting.notesDisplay.sectionLineCount;
 	const barPos = setting.barPos;
 	const notesHeignt = notesWidth / notesAspect;
 	const height = (lines / 2) * (3 * notesHeignt) * intervalRatio;
@@ -53,11 +53,11 @@ const SectionColumn: React.SFC<ISectionColumn> = (props: ISectionColumn) => {
 	};
 
 	return (
-		<div style={{ position: 'relative', display: 'inline-block', marginLeft: 20, width: `${notesWidth * 5}px`}}>
+		<div style={{ position: 'relative', display: 'inline-block', marginLeft: 20, width: `${notesWidth * 5}px`, cursor: setting.editMode === 'music' ? 'pointer' : 'default'}}>
 			<div style={{ position: 'relative', width: '80%', marginBottom: notesWidth / 5 }}>
 				{props.sectionIndex > 0 ? <Button icon={IconNames.DELETE} minimal={true} style={{ width: notesWidth, height: notesHeignt, }} onClick={() => dispatch(mapStateModule.actions.removeSection(props.halfBeats))} /> : null}
 				<span style={{position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', fontSize: notesWidth / 3}}>{props.sectionIndex + 1}</span>
-				<Button icon={IconNames.ADD} minimal={true} style={{ width: notesWidth, height: notesHeignt, marginLeft: notesWidth * (props.sectionIndex > 0 ? 2 : 3), }} onClick={() => dispatch(mapStateModule.actions.addSection({insertIndex: endIndex, lines: lines}))} />
+				<Button icon={IconNames.ADD} minimal={true} style={{ width: notesWidth, height: notesHeignt, marginLeft: notesWidth * (props.sectionIndex > 0 ? 2 : 3), }} onClick={() => dispatch(mapStateModule.actions.addSection({ sectionIndex: props.sectionIndex, insertIndex: endIndex, lines: lines}))} />
 			</div>
 			<div id={`section${props.id}`} style={sectionStyle} >
 				{props.halfBeats.map((value, index) => <HalfBeat key={index} halfBeatIndex={index} notesIndexes={value} />)}

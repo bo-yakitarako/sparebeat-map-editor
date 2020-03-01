@@ -22,6 +22,7 @@
     "react-scripts": "3.4.0",
     "react-shapes": "^0.1.0",
     "redux": "^4.0.5",
+    "redux-saga": "^1.1.3",
     "typescript": "~3.7.2"
   },
   "scripts": {

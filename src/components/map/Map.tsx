@@ -4,7 +4,8 @@ import { AppState } from '../../store';
 import SectionColumn from './notesUnit/SectionColumn';
 import { Button, Icon } from '@blueprintjs/core';
 import { IconNames } from '@blueprintjs/icons';
-import mapStateModule, { assignSection } from '../../modules/mapState';
+import mapStateModule, { assignSection } from '../../modules/editorModule';
+import MusicBar from '../../modules/MusicBar';
 
 const mapStyle: React.CSSProperties = {
 	position: 'relative',
@@ -20,12 +21,13 @@ const mapStyle: React.CSSProperties = {
 
 const Map = () => {
 	const dispatch = useDispatch();
-	const column = useSelector((state: AppState) => state.editorSetting.notesDisplay.column);
-	const bpm = useSelector((state: AppState) => state.mapState.current.bpm);
-	const currentSection = useSelector((state: AppState) => state.mapState.current.currentSection);
-	const lineStates = useSelector((state: AppState) => state.mapState.current.lines);
-	const sectionLinesCount = useSelector((state: AppState) => state.editorSetting.notesDisplay.lines);
-	const sections = assignSection(lineStates, sectionLinesCount);
+	const state = useSelector((state: AppState) => state); 
+	const mapState = state.current;
+	const column = state.notesDisplay.column;
+	const bpm = mapState.bpm;
+	const currentSection = mapState.currentSection;
+	const sectionLinesCount = state.notesDisplay.sectionLineCount;
+	const sections = assignSection(mapState.lines, sectionLinesCount);
 	const sectionIndexes: number[] = [];
 	for (let i = currentSection; i < sections.length && i < currentSection + column; i++) {
 		sectionIndexes.push(i);
@@ -40,19 +42,22 @@ const Map = () => {
 		dispatch(mapStateModule.actions.moveSection(nextSection < 0 ? 0 : nextSection > sections.length - column ? sections.length - column : nextSection));
 	};
 	const getSectionPos = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-		for (let i = 0; i < sectionIndexes.length; i++) {
-			const rect = document.getElementById(`section${i}`)?.getBoundingClientRect();
-			if (rect && rect.left < e.clientX && e.clientX < rect.right && rect.top < e.clientY && e.clientY < rect.bottom) {
-				
+		if (state.editMode === 'music') {
+			for (let i = 0; i < sectionIndexes.length; i++) {
+				const rect = document.getElementById(`section${i}`)?.getBoundingClientRect();
+				if (rect && rect.left < e.clientX && e.clientX < rect.right && rect.top < e.clientY && e.clientY < rect.bottom) {
+					const sectionPos = {section: i + currentSection, pos: rect.bottom - e.clientY};
+					const musicBar = new MusicBar(state, mapState.bpmChanges);
+					const time = musicBar.posToTime(sectionPos);
+					dispatch(mapStateModule.actions.updateCurrentTime(time));
+					dispatch(mapStateModule.actions.moveBarPos(sectionPos));
+					(document.getElementById('music') as HTMLAudioElement).currentTime = time;
+				}
 			}
 		}
 	};
 	return (
-		<div style={mapStyle} onClick={e => {
-			const section = document.getElementById('section0');
-			const rect = section?.getBoundingClientRect();
-			console.log(rect ? rect.bottom - rect.top : '');
-		}}>
+		<div style={mapStyle} onClick={getSectionPos}>
 			<div style={{display: 'inline-block', textAlign: 'left'}}>
 				{sectionIndexes.map((value, index) => <SectionColumn key={value} id={index} sectionIndex={value} halfBeats={sections[value]} />)}
 			</div>

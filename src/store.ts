@@ -1,21 +1,24 @@
-import { combineReducers, configureStore, getDefaultMiddleware } from "@reduxjs/toolkit";
-import editorSetting from './modules/editorSetting';
-import mapStateModule from './modules/mapState';
+import { configureStore, getDefaultMiddleware } from "@reduxjs/toolkit";
+import createSagaMiddleware from 'redux-saga'
+import mapStateModule from './modules/editorModule';
+import rootSaga from './modules/playMusic';
 
-const rootReducer = combineReducers({
-	editorSetting: editorSetting.reducer,
-	mapState: mapStateModule.reducer,
-});
+// const rootReducer = combineReducers({
+// 	mapState: mapStateModule.reducer,
+// });
 
+const sagaMiddleware = createSagaMiddleware();
 const setupStore = () => {
-	const middlewares = [...getDefaultMiddleware()];
+	const middlewares = [...getDefaultMiddleware(), sagaMiddleware];
 	return configureStore({
 		middleware: middlewares,
-		reducer: rootReducer
+		reducer: mapStateModule.reducer
 	});
 };
 
 const store = setupStore();
+sagaMiddleware.run(rootSaga);
+
 export default store;
 
 export type AppState = ReturnType<typeof store.getState>;

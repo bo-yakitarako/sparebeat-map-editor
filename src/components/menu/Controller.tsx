@@ -4,8 +4,8 @@ import { AppState } from '../../store';
 import { NumericInput, Card, Elevation, Divider, Button, ButtonGroup, Slider } from '@blueprintjs/core';
 import { IconNames } from '@blueprintjs/icons';
 import Notes, { NotesStatus } from '../map/Notes';
-import mapStateModule from '../../modules/mapState';
-import editorSettingModule, { EditMode, NotesMode } from '../../modules/editorSetting';
+import mapStateModule from '../../modules/editorModule';
+import editorSettingModule, { EditMode, NotesMode } from '../../modules/editorModule';
 
 const controllerStyle: React.CSSProperties = {
 	display: "inline-flex",
@@ -21,30 +21,33 @@ const currentTimeCardStyle: React.CSSProperties = {
 	width: '100%',
 	textAlign: 'center',
 	fontSize: '24px',
-}
+};
 
-const music = new Audio('media/Grievous_Lady.mp3');
-music.volume = 0.1;
+const formatTime = (time: number) => {
+	const doubleDigest = (num: number) => ("0" + num).slice(-2);
+	const minute = Math.floor(time / 60);
+	const second = Math.floor(time) % 60;
+	const mill = Math.floor(((time - Math.floor(time)) * 100));
+	return `${doubleDigest(minute)}:${doubleDigest(second)}:${doubleDigest(mill)}`;
+};
 
 const Controller = () => {
+	const music = document.getElementById('music') as HTMLAudioElement;
+	music.volume = 0.1;
+	music.playbackRate = 0.25;
 	const dispatch = useDispatch();
 	const putting = true;
 	const notesWidth = 60;
-	const loaded = useSelector((state: AppState) => state.editorSetting.loaded);
-	const editMode = useSelector((state: AppState) => state.editorSetting.editMode);
-	const notesMode = useSelector((state: AppState) => state.editorSetting.notesMode);
-	const barPos = useSelector((state: AppState) => state.editorSetting.barPos);
-	const mapState = useSelector((state: AppState) => state.mapState.current);
-	const bpmChanges = mapState.bpmChanges;
+	const loaded = useSelector((state: AppState) => state.loaded);
+	const editMode = useSelector((state: AppState) => state.editMode);
+	const notesMode = useSelector((state: AppState) => state.notesMode);
+	const currentTime = useSelector((state: AppState) => state.currentTime);
+	const mapState = useSelector((state: AppState) => state.current);
 	const changeEdit = (mode: EditMode) => () => {
 		dispatch(editorSettingModule.actions.changeEditMode(mode));
 	}
 	const changeNotes = (mode: NotesMode) => () => {
 		dispatch(editorSettingModule.actions.changeNotesMode(mode));
-	}
-	music.ontimeupdate = () => {
-		dispatch(editorSettingModule.actions.updateBarPos({time: music.currentTime, bpmChanges: bpmChanges}));
-		console.log(barPos);
 	};
 	// setInterval(() => {
 	// }, 1000);
@@ -77,12 +80,14 @@ const Controller = () => {
 			</ButtonGroup>
 			<Divider />
 			<p>Music Player</p>
-			<Card style={currentTimeCardStyle}>00:00:00</Card>
+			<Card style={currentTimeCardStyle}>{formatTime(currentTime)}</Card>
 			<ButtonGroup fill={true}>
 				<Button disabled={!loaded} icon={IconNames.PLAY} onClick={() => {
+					dispatch(editorSettingModule.actions.play());
 					music.play();
 				}} />
 				<Button disabled={!loaded} icon={IconNames.STOP} onClick={() => {
+					dispatch(editorSettingModule.actions.pause());
 					music.pause();
 				}} />
 			</ButtonGroup>
