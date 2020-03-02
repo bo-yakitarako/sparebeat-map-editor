@@ -29,7 +29,7 @@ const NotesComponent: React.SFC<INotes> = (props: INotes) => {
 		height: `${height}px`,
 		cursor: props.status !== NotesStatus.INVALID ? 'pointer' : 'default',
 	};
-	const isDark = useSelector((state: AppState) => state.themeBlack);;
+	const isDark = useSelector((state: AppState) => state.themeDark);;
 	const barLineStyle: React.CSSProperties = {
 		position: 'absolute',
 		left: `0px`,

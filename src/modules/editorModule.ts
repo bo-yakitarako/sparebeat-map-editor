@@ -8,9 +8,9 @@ export interface INotesLineState {
 	status: NotesStatus[];
 	snap24: boolean;
 	bpm: number;
-	section?: boolean;
-	speed?: number;
-	barLine?: boolean;
+	speed: number;
+	barLine: boolean;
+	barLineState: boolean;
 }
 
 export interface IMapState {
@@ -22,13 +22,15 @@ export interface IMapState {
 	linesHistory: INotesLineState[][];
 	historyIndex: number;
 	bpmChanges: { bpm: number, time: number }[];
+	activeTime: number[];
 }
 
 export type DifficlutySelect = 'easy' | 'normal' | 'hard';
 export type EditMode = 'add' | 'remove' | 'music';
 export type NotesMode = 'normal' | 'attack' | 'longStart' | 'longEnd';
+export type Slider = 'timePosition' | 'playbackRate' | 'musicVolume' | 'clapVolume';
 export interface IEditorState {
-	themeBlack: boolean;
+	themeDark: boolean;
 	loaded: boolean;
 	editMode: EditMode;
 	notesMode: NotesMode;
@@ -42,8 +44,15 @@ export interface IEditorState {
 	barWidth: number;
 	playing: boolean;
 	barPos: SectionPos;
+	sliderValue: {
+		timePosition: number;
+		playbackRate: number;
+		musicVolume: number;
+		clapVolume: number;
+	};
 	startTime: number;
 	currentTime: number;
+	clapIndex: number | undefined;
 	current: IMapState;
 	easy: IMapState;
 	normal: IMapState;
@@ -54,20 +63,16 @@ export interface IEditorState {
 const initialNotesStatus = [NotesStatus.NONE, NotesStatus.NONE, NotesStatus.NONE, NotesStatus.NONE];
 
 const initialBpm = 210;
-const initialMapState: IMapState = { bpm: initialBpm, snap24: false, currentSection: 0, sectionLength: 4, lines: [], linesHistory: [], historyIndex: 0, bpmChanges: [] };
+const initialMapState: IMapState = { bpm: initialBpm, snap24: false, currentSection: 0, sectionLength: 4, lines: [], linesHistory: [], historyIndex: 0, bpmChanges: [], activeTime: [] };
 for (let i = 0; i < 64; i++) {
-	const lineState: INotesLineState = { status: [...initialNotesStatus], snap24: false, bpm: initialBpm, barLine: i % 16 === 0 ? true : undefined };
-	if (i === 0) {
-		lineState.barLine = lineState.section = true;
-		lineState.speed = 1.0;
-	}
+	const lineState: INotesLineState = { status: [...initialNotesStatus], snap24: false, bpm: initialBpm, barLine: i % 16 === 0, speed: 1.0, barLineState: true };
 	initialMapState.lines.push(lineState);
 }
 initialMapState.linesHistory.push(initialMapState.lines);
 initialMapState.bpmChanges = getBpmChanges(initialMapState);
 
 const initialState: IEditorState = {
-	themeBlack: true,
+	themeDark: false,
 	loaded: true,
 	editMode: 'add',
 	notesMode: 'normal',
@@ -81,8 +86,15 @@ const initialState: IEditorState = {
 	barWidth: 4,
 	barPos: { section: 0, pos: 24 / 2.5 - 2 },
 	playing: false,
+	sliderValue: {
+		timePosition: 0,
+		playbackRate: 100,
+		musicVolume: 10,
+		clapVolume: 100,
+	},
 	startTime: 0,
 	currentTime: 0.0,
+	clapIndex: undefined,
 	current: initialMapState,
 	easy: initialMapState,
 	normal: cloneDeep<IMapState>(initialMapState),
@@ -114,7 +126,7 @@ const mapStateModule = createSlice({
 	initialState: initialState,
 	reducers: {
 		changeTheme: (state, action: PayloadAction<boolean>) => {
-			state.themeBlack = action.payload;
+			state.themeDark = action.payload;
 		},
 		load: (state) => {
 			state.loaded = true;
@@ -133,6 +145,7 @@ const mapStateModule = createSlice({
 		},
 		updateBarPos: (state, action: PayloadAction<number>) => {
 			state.currentTime = action.payload;
+			state.sliderValue.timePosition = 1000 * (action.payload / (document.getElementById('music') as HTMLAudioElement).duration);
 			const musicBar = new MusicBar(state, state.current.bpmChanges);
 			state.barPos = musicBar.currentPosition(action.payload);
 		},
@@ -141,6 +154,19 @@ const mapStateModule = createSlice({
 		},
 		updateCurrentTime: (state, action: PayloadAction<number>) => {
 			state.currentTime = action.payload;
+			state.sliderValue.timePosition = 1000 * (action.payload / (document.getElementById('music') as HTMLAudioElement).duration);
+			state.clapIndex = searchClapIndex(state, action.payload);
+		},
+		updateClapIndex: (state, action: PayloadAction<number>) => {
+			state.clapIndex = searchClapIndex(state, action.payload, state.clapIndex);
+		},
+		changeSliderValue: (state, action: PayloadAction<{slider: Slider, value: number}>) => {
+			state.sliderValue[action.payload.slider] = action.payload.value;
+		},
+		setStartTime: (state, action: PayloadAction<{value: number, time: number}>) => {
+			state.startTime = isNaN(action.payload.value) ? 0 : action.payload.value;
+			const musicBar = new MusicBar(state, state.current.bpmChanges);
+			state.barPos = musicBar.currentPosition(action.payload.time);
 		},
 		changeNotesStatus: (state, action: PayloadAction<IChangeNotesStatus>) => {
 			const line = action.payload.lineIndex;
@@ -154,24 +180,31 @@ const mapStateModule = createSlice({
 				}
 				state.current.lines[line].status[lane] = action.payload.newStatus;
 			}
+			state.current.activeTime = searchActiveTime(state.current);
+			state.clapIndex = searchClapIndex(state);
 			pushHistory(state.current, state.current.lines, state.historySize);
 		},
 		addSection: (state, action: PayloadAction<{ sectionIndex: number, insertIndex: number, lines: number }>) => {
 			const snap24 = state.current.snap24;
+			const insertLine = state.current.lines[action.payload.insertIndex];
 			for (let i = 0; i < action.payload.lines * (snap24 ? 1.5 : 1); i++) {
-				const addLine: INotesLineState = { status: [...initialNotesStatus], snap24: snap24, bpm: state.current.lines[action.payload.insertIndex].bpm, barLine: i === 0 ? true : undefined };
+				const addLine: INotesLineState = { status: [...initialNotesStatus], snap24: snap24, bpm: insertLine.bpm, speed: insertLine.speed, barLine: i === 0, barLineState: insertLine.barLineState };
 				state.current.lines.splice(action.payload.insertIndex + i + 1, 0, addLine);
 			}
 			state.current.sectionLength++;
 			if (state.current.currentSection + state.notesDisplay.column - 1 === action.payload.sectionIndex && state.current.sectionLength > state.notesDisplay.column) {
 				state.current.currentSection++;
 			}
+			state.current.activeTime = searchActiveTime(state.current);
+			state.clapIndex = searchClapIndex(state);
 			pushHistory(state.current, state.current.lines, state.historySize);
 		},
 		removeSection: (state, action: PayloadAction<number[][]>) => {
 			adjustCurrentSection(state, 1);
 			removeSection(state.current, action.payload);
 			state.current.sectionLength--;
+			state.current.activeTime = searchActiveTime(state.current);
+			state.clapIndex = searchClapIndex(state);
 			pushHistory(state.current, state.current.lines, state.historySize);
 		},
 		changeSnap: (state) => {
@@ -193,6 +226,8 @@ const mapStateModule = createSlice({
 			}
 			state.current.lines = state.current.linesHistory[state.current.historyIndex];
 			state.current.sectionLength = assignSection(state.current.lines, state.notesDisplay.sectionLineCount).length;
+			state.current.activeTime = searchActiveTime(state.current);
+			state.clapIndex = searchClapIndex(state);
 			adjustCurrentSection(state, 0);
 		},
 		redo: (state) => {
@@ -202,6 +237,8 @@ const mapStateModule = createSlice({
 			}
 			state.current.lines = state.current.linesHistory[state.current.historyIndex];
 			state.current.sectionLength = assignSection(state.current.lines, state.notesDisplay.sectionLineCount).length;
+			state.current.activeTime = searchActiveTime(state.current);
+			state.clapIndex = searchClapIndex(state);
 			adjustCurrentSection(state, 0);
 		},
 	}
@@ -238,6 +275,9 @@ function changeBeatSnap(mapState: IMapState, startIndex: number) {
 					status: [NotesStatus.NONE, NotesStatus.NONE, NotesStatus.NONE, NotesStatus.NONE],
 					snap24: true,
 					bpm: mapState.lines[index + 1].bpm,
+					speed: mapState.lines[index + 1].speed,
+					barLine: false,
+					barLineState: mapState.lines[index + 1].barLineState,
 				}
 				mapState.lines.splice(index + 1, 0, newLine);
 				index += 3;
@@ -289,6 +329,31 @@ function removeSection(state: IMapState, halfBeats: number[][]) {
 	const endBeat = halfBeats[halfBeats.length - 1];
 	const endIndex = endBeat[endBeat.length - 1];
 	state.lines = state.lines.filter((value, index) => index < startIndex || endIndex < index);
+}
+
+function searchClapIndex(state: IEditorState, time?: number, index: number = 0): number | undefined {
+	if (!time) {
+		time = state.currentTime - state.startTime / 1000;
+	}
+	if (state.current.activeTime.length === 0 || state.current.activeTime.length <= index) {
+		return undefined;
+	} else if (time <= state.current.activeTime[0]) {
+		return 0;
+	} else {
+		return state.current.activeTime[index] < time && time < state.current.activeTime[index + 1] ? index + 1 : searchClapIndex(state, time, index + 1);
+	}
+}
+
+function searchActiveTime(mapState: IMapState) {
+	let time = 0;
+	const activeTime: number[] = [];
+	for (const lineState of mapState.lines) {
+		if (isActiveLine(lineState)) {
+			activeTime.push(time);
+		}
+		time += (lineState.snap24 ? 10 : 15) / lineState.bpm;
+	}
+	return activeTime;
 }
 
 function getBpmChanges(mapState: IMapState) {

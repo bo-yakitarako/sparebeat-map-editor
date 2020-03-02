@@ -15,7 +15,7 @@ interface ISectionColumn {
 const SectionColumn: React.SFC<ISectionColumn> = (props: ISectionColumn) => {
 	const dispatch = useDispatch();
 	const setting = useSelector((state: AppState) => state);
-	const isDark = setting.themeBlack;
+	const isDark = setting.themeDark;
 	const notesWidth = setting.notesDisplay.notesWidth;
 	const intervalRatio = setting.notesDisplay.intervalRatio;
 	const notesAspect = setting.notesDisplay.aspect;

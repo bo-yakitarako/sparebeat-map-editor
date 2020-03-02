@@ -24,7 +24,7 @@ const HalfBeat: React.SFC<IHalfBeat> = (props: IHalfBeat) => {
 	return (
 		<div style={beatStyle}>
 			{props.notesIndexes.map((notesIndex, beatIndex) =>
-				<Line key={beatIndex} lineIndex={notesIndex} innerBeatIndex={beatIndex} snap24={snap24} centerLine={props.halfBeatIndex % 2 === 0 && beatIndex === 0} sectionFirst={beatIndex === 0 && props.halfBeatIndex === 0} />
+				<Line key={beatIndex} lineIndex={notesIndex} innerBeatIndex={beatIndex} snap24={snap24} centerLine={props.halfBeatIndex % 2 === 0 && beatIndex === 0} />
 			)}
 		</div>
 	)

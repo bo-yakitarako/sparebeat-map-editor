@@ -1,0 +1,17 @@
+.notesOption, .notesOptionDark {
+	position: absolute;
+	top: 0;
+	height: 100%;
+	text-align: center;
+	z-index: 1;
+}
+
+.notesOption:hover {
+	cursor: pointer;
+	background-color: #D8E1E8;
+}
+
+.notesOptionDark:hover {
+	cursor: pointer;
+	background-color: #293742;
+}

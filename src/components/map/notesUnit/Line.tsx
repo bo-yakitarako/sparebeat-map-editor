@@ -9,7 +9,6 @@ interface ILine {
 	innerBeatIndex: number;
 	snap24: boolean;
 	centerLine?: boolean;
-	sectionFirst?: boolean;
 }
 
 export interface IChangeNotesStatus {
@@ -23,7 +22,7 @@ const Line: React.SFC<ILine> = (props: ILine) => {
 	const notesWidth = useSelector((state: AppState) => state.notesDisplay.notesWidth);
 	const intervalRatio = useSelector((state: AppState) => state.notesDisplay.intervalRatio);
 	const notesAspect = useSelector((state: AppState) => state.notesDisplay.aspect);
-	const isDark = useSelector((state: AppState) => state.themeBlack);
+	const isDark = useSelector((state: AppState) => state.themeDark);
 	const editMode = useSelector((state: AppState) => state.editMode);
 	const addNotes = useSelector((state: AppState) => state.notesMode);
 	const lineState = useSelector((state: AppState) => state.current.lines);
@@ -31,8 +30,9 @@ const Line: React.SFC<ILine> = (props: ILine) => {
 	const height = notesWidth / notesAspect;
 	const location = (props.snap24 ? 1 : 1.5) * props.innerBeatIndex * height * intervalRatio;
 	const bpmChanging = props.lineIndex === 0 || currentLineState.bpm !== lineState[props.lineIndex - 1].bpm;
-	const speedChanging = props.lineIndex === 0 || currentLineState.speed !== lineState[props.lineIndex - 1].speed;
-	const isBarLine = currentLineState.barLine && (props.sectionFirst || bpmChanging || speedChanging);
+	const speedChanging = props.lineIndex > 0 && currentLineState.speed !== lineState[props.lineIndex - 1].speed;
+	const isBarLine = currentLineState.barLineState && currentLineState.barLine;
+	const optionStyle = editMode !== 'music' ? (isDark ? 'notesOptionDark' : 'notesOption') : '';
 	const lineStyle: React.CSSProperties = {
 		position: 'absolute',
 		left: '0',
@@ -53,7 +53,7 @@ const Line: React.SFC<ILine> = (props: ILine) => {
 		zIndex: 2,
 	};
 	const notesOption = (
-		<div style={{
+		<div className={optionStyle} style={{
 			position: 'absolute',
 			top: 0,
 			left: notesWidth * 4,
@@ -66,7 +66,7 @@ const Line: React.SFC<ILine> = (props: ILine) => {
 			zIndex: 1,
 		}}>
 			<div style={{position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)'}}>
-				{bpmChanging ? currentLineState.bpm : currentLineState.speed ? `× ${currentLineState.speed.toFixed(1)}` : ''}
+				{bpmChanging ? currentLineState.bpm : speedChanging && currentLineState.speed ? `× ${currentLineState.speed.toFixed(1)}` : ''}
 			</div>
 			{isBarLine ? <div style={barLineStyle}></div> : null}
 		</div>
