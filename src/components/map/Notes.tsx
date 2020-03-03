@@ -13,10 +13,11 @@ interface INotes {
 	status: NotesStatus;
 	aspect?: number;
 	centerLine?: boolean;
+	inBind?: boolean;
 	onClick?: Function;
 };
 
-const notesColors: {[key: string]: string[]} = {
+const notesColors = {
 	default: ['#ce9eff', '#ceceff', '#9eceff', '#9effff', '#ff4e4e']
 }
 
@@ -49,6 +50,7 @@ const NotesComponent: React.SFC<INotes> = (props: INotes) => {
 		const points: string[] = [`${strokeWidth},${height / 2}`, `${props.width / 2},${strokeWidth}`, `${props.width - strokeWidth},${height / 2}`, `${props.width / 2},${height - strokeWidth}`]
 		const diamondPointsValue = `${points[0]} ${points[1]} ${points[2]} ${points[3]} ${points[0]} ${points[1]}`;
 		const fillColor = props.status === NotesStatus.ATTACK ? notesColors.default[4] : props.status === NotesStatus.NONE ? (isDark ? "#5C7080" : "#F5F8FA") : notesColors.default[props.index];
+		const strokeColor = props.inBind ? notesColors.default[4] : (isDark ? "#BFCCD6" : "#5C7080");
 		const click = () => {
 			if (props.onClick) {
 				props.onClick();
@@ -66,7 +68,7 @@ const NotesComponent: React.SFC<INotes> = (props: INotes) => {
 			const tokenText = props.status === NotesStatus.LONG_START ? 'S' : 'E';
 			notes = (
 				<div style={boxStyle} onClick={click}>
-					<Polyline points={diamondPointsValue} fill={{ color: fillColor }} stroke={{ color: isDark ? "#BFCCD6" : "#5C7080"}} strokeWidth={strokeWidth} />
+					<Polyline points={diamondPointsValue} fill={{ color: fillColor }} stroke={{ color: strokeColor}} strokeWidth={strokeWidth} />
 					{props.centerLine ? <div style={barLineStyle}></div> : null}
 					<span style={lnTokenStyle}>{tokenText}</span>
 				</div>
@@ -74,7 +76,7 @@ const NotesComponent: React.SFC<INotes> = (props: INotes) => {
 		} else {
 			notes = (
 				<div style={boxStyle} onClick={click}>
-					<Polyline points={diamondPointsValue} fill={{ color: fillColor }} stroke={{ color: isDark ? "#BFCCD6" : "#5C7080"}} strokeWidth={strokeWidth} />
+					<Polyline points={diamondPointsValue} fill={{ color: fillColor }} stroke={{ color: strokeColor}} strokeWidth={strokeWidth} />
 					{props.centerLine ? <div style={barLineStyle}></div> : null}
 				</div>
 			);

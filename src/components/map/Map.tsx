@@ -2,10 +2,11 @@ import * as React from 'react';
 import { useSelector, useDispatch } from "react-redux";
 import { AppState } from '../../store';
 import SectionColumn from './notesUnit/SectionColumn';
-import { Button, Icon } from '@blueprintjs/core';
+import { Button, Icon, Tooltip, Classes } from '@blueprintjs/core';
 import { IconNames } from '@blueprintjs/icons';
-import mapStateModule, { assignSection } from '../../modules/editorModule';
+import mapStateModule, { assignSection, IEditorState } from '../../modules/editorModule';
 import MusicBar from '../../modules/MusicBar';
+import { NotesStatus } from './Notes';
 
 const mapStyle: React.CSSProperties = {
 	position: 'relative',
@@ -24,7 +25,6 @@ const Map = () => {
 	const state = useSelector((state: AppState) => state); 
 	const mapState = state.current;
 	const column = state.notesDisplay.column;
-	const bpm = mapState.bpm;
 	const currentSection = mapState.currentSection;
 	const sectionLinesCount = state.notesDisplay.sectionLineCount;
 	const sections = assignSection(mapState.lines, sectionLinesCount);
@@ -56,6 +56,15 @@ const Map = () => {
 			}
 		}
 	};
+	const lastTime = getLastTime(state);
+	const notesCount = countNotes(state);
+	const infoTooltip = (
+		<table style={{textAlign: "left"}}>
+			<tr><td style={{textAlign: 'right', paddingRight: 5}}>ノーツ数</td><td>{notesCount.notes}</td></tr>
+			<tr><td style={{ textAlign: 'right', paddingRight: 5 }}>AN数</td><td>{notesCount.attack}</td></tr>
+			<tr><td style={{ textAlign: 'right', paddingRight: 5 }}>密度</td><td>{(notesCount.notes / lastTime).toFixed(2)}{" "}N/秒</td></tr>
+		</table>
+	);
 	return (
 		<div style={mapStyle} onClick={getSectionPos}>
 			<div style={{display: 'inline-block', textAlign: 'left'}}>
@@ -68,7 +77,10 @@ const Map = () => {
 				<Button disabled={currentSection + pageLength >= sections.length} minimal={true} icon={IconNames.CHEVRON_RIGHT} style={pageJumpButtonStyle} onClick={moveSection(1)} />
 				<Button disabled={currentSection + pageLength >= sections.length} minimal={true} icon={IconNames.DOUBLE_CHEVRON_RIGHT} style={{ width: 40 }} onClick={moveSection(column)} />
 				<div style={{position: 'absolute', top: 0, right: 0, width: '200px', fontSize: '20px'}} >
-					<Icon icon={IconNames.INFO_SIGN} iconSize={24} /> BPM: {bpm}
+					<Tooltip className={state.themeDark ? Classes.DARK : ''} content={infoTooltip} >
+						<Icon style={{cursor: 'pointer'}} icon={IconNames.INFO_SIGN} iconSize={24} />
+					</Tooltip>{" "}
+					BPM: {getCurrentBpm(state)}
 				</div>
 			</div>
 		</div>
@@ -76,3 +88,28 @@ const Map = () => {
 };
 
 export default Map;
+
+function getCurrentBpm(state: IEditorState) {
+	const bpmChanges = state.current.bpmChanges;
+	const effectiveBpmChanges = bpmChanges.filter((value) => value.time <= state.currentTime);
+	return effectiveBpmChanges.length === 0 ? bpmChanges[0].bpm : effectiveBpmChanges[effectiveBpmChanges.length - 1].bpm;
+}
+
+function getLastTime(state: IEditorState) {
+	return state.current.lines.slice(1).reduce((pre, cur) => {
+		return { preLine: cur, time: pre.time + ((pre.preLine.snap24 ? 10 : 15) / pre.preLine.bpm) }
+	}, {preLine: state.current.lines[0], time: 0}).time;
+}
+
+function countNotes(state: IEditorState) {
+	return state.current.lines.reduce((pre, cur) => {
+		const { notes, attack } = pre;
+		const { curNotes, curAttack } = cur.status.reduce((pre, cur) => {
+			const { curNotes, curAttack } = pre;
+			const nextNotes = curNotes + (cur < 4 ? 1 : 0);
+			const nextAttack = curAttack + (cur === NotesStatus.ATTACK ? 1 : 0);
+			return { curNotes: nextNotes, curAttack: nextAttack };
+		}, {curNotes: 0, curAttack: 0});
+		return { notes: notes + curNotes, attack: attack + curAttack };
+	}, {notes: 0, attack: 0});
+}

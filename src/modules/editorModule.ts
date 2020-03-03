@@ -4,9 +4,11 @@ import MusicBar, { SectionPos } from './MusicBar';
 import { NotesStatus } from '../components/map/Notes';
 import { IChangeNotesStatus } from '../components/map/notesUnit/Line';
 
+export type NotesOption = 'inBind' | 'bpm' | 'speed' | 'barLine' | 'barLineState';
 export interface INotesLineState {
 	status: NotesStatus[];
 	snap24: boolean;
+	inBind: boolean;
 	bpm: number;
 	speed: number;
 	barLine: boolean;
@@ -50,6 +52,13 @@ export interface IEditorState {
 		musicVolume: number;
 		clapVolume: number;
 	};
+	temporaryNotesOption: {
+		bpm: number;
+		speed: number;
+		barLine: boolean;
+		barLineState: boolean;
+		inBind: boolean;
+	};
 	startTime: number;
 	currentTime: number;
 	clapIndex: number | undefined;
@@ -65,7 +74,7 @@ const initialNotesStatus = [NotesStatus.NONE, NotesStatus.NONE, NotesStatus.NONE
 const initialBpm = 210;
 const initialMapState: IMapState = { bpm: initialBpm, snap24: false, currentSection: 0, sectionLength: 4, lines: [], linesHistory: [], historyIndex: 0, bpmChanges: [], activeTime: [] };
 for (let i = 0; i < 64; i++) {
-	const lineState: INotesLineState = { status: [...initialNotesStatus], snap24: false, bpm: initialBpm, barLine: i % 16 === 0, speed: 1.0, barLineState: true };
+	const lineState: INotesLineState = { status: [...initialNotesStatus], inBind: false, snap24: false, bpm: initialBpm, barLine: i % 16 === 0, speed: 1.0, barLineState: true };
 	initialMapState.lines.push(lineState);
 }
 initialMapState.linesHistory.push(initialMapState.lines);
@@ -91,6 +100,13 @@ const initialState: IEditorState = {
 		playbackRate: 100,
 		musicVolume: 10,
 		clapVolume: 100,
+	},
+	temporaryNotesOption: {
+		inBind: false,
+		bpm: initialBpm,
+		speed: 1.0,
+		barLine: false,
+		barLineState: true,
 	},
 	startTime: 0,
 	currentTime: 0.0,
@@ -184,11 +200,25 @@ const mapStateModule = createSlice({
 			state.clapIndex = searchClapIndex(state);
 			pushHistory(state.current, state.current.lines, state.historySize);
 		},
+		saveTemporaryNotesOption: (state, action: PayloadAction<number>) => {
+			const { bpm, speed, barLine, barLineState, inBind } = state.current.lines[action.payload];
+			state.temporaryNotesOption = { bpm: bpm, speed: speed, barLine: barLine, barLineState: barLineState, inBind: inBind };
+		},
+		updateTemporaryNotesOption: (state, action: PayloadAction<{index: number, target: NotesOption, value: number | boolean}>) => {
+			if (typeof action.payload.value === 'boolean') {
+				(state.temporaryNotesOption[action.payload.target] as boolean) = action.payload.value;
+			} else {
+				(state.temporaryNotesOption[action.payload.target] as number) = action.payload.value;
+			}
+		},
+		changeNotesOption: (state, action: PayloadAction<{lineIndex: number, target: NotesOption, update: number | boolean}>) => {
+			updateNotesOption(action.payload.lineIndex, action.payload.target, action.payload.update, state);
+		},
 		addSection: (state, action: PayloadAction<{ sectionIndex: number, insertIndex: number, lines: number }>) => {
 			const snap24 = state.current.snap24;
 			const insertLine = state.current.lines[action.payload.insertIndex];
 			for (let i = 0; i < action.payload.lines * (snap24 ? 1.5 : 1); i++) {
-				const addLine: INotesLineState = { status: [...initialNotesStatus], snap24: snap24, bpm: insertLine.bpm, speed: insertLine.speed, barLine: i === 0, barLineState: insertLine.barLineState };
+				const addLine: INotesLineState = { status: [...initialNotesStatus], snap24: snap24, inBind: insertLine.inBind, bpm: insertLine.bpm, speed: insertLine.speed, barLine: i === 0, barLineState: insertLine.barLineState };
 				state.current.lines.splice(action.payload.insertIndex + i + 1, 0, addLine);
 			}
 			state.current.sectionLength++;
@@ -205,6 +235,9 @@ const mapStateModule = createSlice({
 			state.current.sectionLength--;
 			state.current.activeTime = searchActiveTime(state.current);
 			state.clapIndex = searchClapIndex(state);
+			pushHistory(state.current, state.current.lines, state.historySize);
+		},
+		addHistory: (state) => {
 			pushHistory(state.current, state.current.lines, state.historySize);
 		},
 		changeSnap: (state) => {
@@ -269,11 +302,13 @@ function changeBeatSnap(mapState: IMapState, startIndex: number) {
 		index += mapState.snap24 ? 3 : 2;
 	} else {
 		if (mapState.snap24) {
-			if (!isActiveLine(mapState.lines[index + 1])) {
+			const barLine = mapState.lines[index + 1].barLine;
+			if (!isActiveLine(mapState.lines[index + 1]) && !barLine) {
 				mapState.lines[index].snap24 = mapState.lines[index + 1].snap24 = true;
 				const newLine: INotesLineState = {
 					status: [NotesStatus.NONE, NotesStatus.NONE, NotesStatus.NONE, NotesStatus.NONE],
 					snap24: true,
+					inBind: mapState.lines[index + 1].inBind,
 					bpm: mapState.lines[index + 1].bpm,
 					speed: mapState.lines[index + 1].speed,
 					barLine: false,
@@ -285,7 +320,8 @@ function changeBeatSnap(mapState: IMapState, startIndex: number) {
 				index += 2;
 			}
 		} else {
-			if (!isActiveLine(mapState.lines[index + 1]) && !isActiveLine(mapState.lines[index + 2])) {
+			const barLine = mapState.lines[index + 1].barLine || mapState.lines[index + 1].barLine;
+			if (!isActiveLine(mapState.lines[index + 1]) && !isActiveLine(mapState.lines[index + 2]) && !barLine) {
 				mapState.lines[index].snap24 = mapState.lines[index + 1].snap24 = false;
 				mapState.lines.splice(index + 2, 1);
 				index += 2;
@@ -408,6 +444,44 @@ function deleteLongNotes(change: IChangeNotesStatus, lines: INotesLineState[]) {
 		if (lines[change.lineIndex].status[change.laneIndex] === NotesStatus.NONE) {
 			for (let i = change.lineIndex + removeDir; lines[i].status[change.laneIndex] === NotesStatus.INVALID; i += removeDir) {
 				lines[i].status[change.laneIndex] = NotesStatus.NONE;
+			}
+		}
+	}
+}
+
+function updateNotesOption(lineIndex: number, target: NotesOption, update: number | boolean, state: IEditorState) {
+	if (target === 'barLine') {
+		const newVal = update as boolean;
+		state.current.lines[lineIndex].barLine = lineIndex > 0 && newVal;
+		if (!newVal && lineIndex > 0) {
+			const preLine = state.current.lines[lineIndex - 1];
+			updateNotesOption(lineIndex, 'bpm', preLine.bpm, state);
+			updateNotesOption(lineIndex, 'speed', preLine.speed, state);
+			updateNotesOption(lineIndex, 'barLineState', preLine.barLineState, state);
+			state.current.lines[lineIndex].barLine = false;
+		}
+	} else if (target === 'inBind' || target === 'barLineState') {
+		const newVal = update as boolean;
+		if (target === 'barLineState' && newVal !== state.current.lines[lineIndex].barLineState && !state.current.lines[lineIndex].barLine) {
+			state.current.lines[lineIndex].barLine = true;
+		}
+		for (let i = lineIndex; i < state.current.lines.length && state.current.lines[i][target] !== newVal; i++) {
+			state.current.lines[i][target] = newVal;
+		}
+	} else {
+		const newVal = update as number;
+		if (newVal !== state.current.lines[lineIndex][target]) {
+			const lines = state.current.lines;
+			if (!lines[lineIndex].barLine) {
+				state.current.lines[lineIndex].barLine = true;
+			}
+			for (let i = lineIndex; i < lines.length && lines[i][target] !== newVal; i++) {
+				state.current.lines[i][target] = newVal;
+			}
+			if (target === 'bpm') {
+				state.current.bpmChanges = getBpmChanges(state.current);
+				state.current.activeTime = searchActiveTime(state.current);
+				state.clapIndex = searchClapIndex(state);
 			}
 		}
 	}
