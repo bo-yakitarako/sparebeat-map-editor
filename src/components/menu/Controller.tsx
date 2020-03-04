@@ -65,10 +65,10 @@ const Controller = () => {
 			<p>Start Time</p>
 			<NumericInput disabled={!loaded} placeholder="Start Time" style={{width: "120px"}} value={startTime} onValueChange={(value) => {dispatch(editorSettingModule.actions.setStartTime({value: value, time: music.currentTime}))}} />
 			<Divider />
-			<p>ノーツオプション</p>
+			<p>編集ツール</p>
 			<ButtonGroup fill={true}>
 				<Button disabled={!loaded} icon={IconNames.EDIT} active={loaded && editMode === 'add'} onClick={changeEdit('add')} />
-				<Button disabled={!loaded} icon={IconNames.ERASER} active={loaded && editMode === 'remove'} onClick={changeEdit('remove')} />
+				<Button disabled={!loaded} icon={IconNames.SELECT} active={loaded && editMode === 'select'} onClick={changeEdit('select')} />
 				<Button disabled={!loaded} icon={IconNames.MUSIC} active={loaded && editMode === 'music'} onClick={changeEdit('music')} />
 			</ButtonGroup>
 			<ButtonGroup fill={true}>

@@ -27,8 +27,26 @@ export interface IMapState {
 	activeTime: number[];
 }
 
+export interface ISelectRange {
+	lane: {
+		start: number;
+		end: number;
+	};
+	line: {
+		start: number;
+		end: number;
+	}
+};
+export interface ICopyObject {
+	index: number;
+	object: {
+		lane: number; 
+		status: NotesStatus;
+	}[];
+}
+
 export type DifficlutySelect = 'easy' | 'normal' | 'hard';
-export type EditMode = 'add' | 'remove' | 'music';
+export type EditMode = 'add' | 'select' | 'music';
 export type NotesMode = 'normal' | 'attack' | 'longStart' | 'longEnd';
 export type Slider = 'timePosition' | 'playbackRate' | 'musicVolume' | 'clapVolume';
 export interface IEditorState {
@@ -59,6 +77,18 @@ export interface IEditorState {
 		barLineState: boolean;
 		inBind: boolean;
 	};
+	selector: {
+		baseX: number;
+		baseY: number;
+		x: number;
+		y: number;
+		width: number;
+		height: number;
+	};
+	rangeSelect: {
+		select: ISelectRange[];
+		copy: ICopyObject[];
+	}
 	startTime: number;
 	currentTime: number;
 	clapIndex: number | undefined;
@@ -81,7 +111,7 @@ initialMapState.linesHistory.push(initialMapState.lines);
 initialMapState.bpmChanges = getBpmChanges(initialMapState);
 
 const initialState: IEditorState = {
-	themeDark: false,
+	themeDark: true,
 	loaded: true,
 	editMode: 'add',
 	notesMode: 'normal',
@@ -107,6 +137,12 @@ const initialState: IEditorState = {
 		speed: 1.0,
 		barLine: false,
 		barLineState: true,
+	},
+	selector: {
+		baseX: 0, baseY: 0, x: 0, y: 0, width: 0, height: 0,
+	},
+	rangeSelect: {
+		select: [], copy: [],
 	},
 	startTime: 0,
 	currentTime: 0.0,
@@ -148,6 +184,7 @@ const mapStateModule = createSlice({
 			state.loaded = true;
 		},
 		changeEditMode: (state, action: PayloadAction<EditMode>) => {
+			state.rangeSelect.select = [];
 			state.editMode = action.payload;
 		},
 		changeNotesMode: (state, action: PayloadAction<NotesMode>) => {
@@ -166,7 +203,13 @@ const mapStateModule = createSlice({
 			state.barPos = musicBar.currentPosition(action.payload);
 		},
 		moveBarPos: (state, action: PayloadAction<SectionPos>) => {
+			const musicBar = new MusicBar(state, state.current.bpmChanges);
+			const time = musicBar.posToTime(action.payload);
+			state.currentTime = time;
 			state.barPos = action.payload;
+			state.sliderValue.timePosition = 1000 * (time / (document.getElementById('music') as HTMLAudioElement).duration);
+			state.clapIndex = searchClapIndex(state, time);
+			(document.getElementById('music') as HTMLAudioElement).currentTime = time;
 		},
 		updateCurrentTime: (state, action: PayloadAction<number>) => {
 			state.currentTime = action.payload;
@@ -184,6 +227,18 @@ const mapStateModule = createSlice({
 			const musicBar = new MusicBar(state, state.current.bpmChanges);
 			state.barPos = musicBar.currentPosition(action.payload.time);
 		},
+		setSelectorBase: (state, action: PayloadAction<{x: number, y: number}>) => {
+			state.selector.baseX = action.payload.x;
+			state.selector.baseY = action.payload.y;
+		},
+		setSelectorRect: (state, action: PayloadAction<{x: number, y: number}>) => {
+			const { x, y } = action.payload;
+			const { baseX, baseY } = state.selector;
+			state.selector.x = x < baseX ? x : baseX;
+			state.selector.y = y < baseY ? y : baseY;
+			state.selector.width = Math.abs(baseX - x);
+			state.selector.height = Math.abs(baseY - y);
+		},
 		changeNotesStatus: (state, action: PayloadAction<IChangeNotesStatus>) => {
 			const line = action.payload.lineIndex;
 			const lane = action.payload.laneIndex;
@@ -199,6 +254,105 @@ const mapStateModule = createSlice({
 			state.current.activeTime = searchActiveTime(state.current);
 			state.clapIndex = searchClapIndex(state);
 			pushHistory(state.current, state.current.lines, state.historySize);
+		},
+		copySelect: (state) => {
+			const { select } = state.rangeSelect;
+			if (select.length === 0) {
+				return;
+			}
+			const firstIndex = select[0].line.start;
+			const copyObject: ICopyObject[] = [];
+			select.forEach(select => {
+				for (let line = select.line.start; line <= select.line.end; line++) {
+					const status: {lane: number, status: NotesStatus}[] = [];
+					for (let lane = select.lane.start; lane <= select.lane.end; lane++) {
+						const laneStatus = state.current.lines[line].status[lane];
+						status.push({lane: lane - select.lane.start, status: laneStatus === NotesStatus.INVALID ? NotesStatus.NONE : laneStatus});
+					}
+					copyObject.push({index: line - firstIndex, object: status});
+				}
+			});
+			state.rangeSelect.copy = copyObject;
+		},
+		pasteSelect: (state, action: PayloadAction<{initialLine: number, initialLane: number}>) => {
+			const { initialLine, initialLane } = action.payload;
+			const copyObject = state.rangeSelect.copy;
+			let firstSection = true;
+			const willConnect: IChangeNotesStatus[] = [];
+			let changed = false;
+			const pushWillConnect = (copyIndex: number, initialLane: number, dir: number) => {
+				if (dir === 0) {
+					return;
+				}
+				const copy = copyObject[copyIndex];
+				for (let lane = initialLane; lane < copy.object[copy.object.length - 1].lane; lane++) {
+					for (let line = copy.index + dir; line >= 0 && line < state.current.lines.length; line += dir) {
+						const status = state.current.lines[line].status[lane];
+						if ((dir < 0 && status === NotesStatus.LONG_START) || (dir > 0 && status === NotesStatus.LONG_END)) {
+							willConnect.push({ lineIndex: line, laneIndex: lane, newStatus: dir < 0 ? NotesStatus.LONG_START : NotesStatus.LONG_END });
+						}
+					}
+				}
+			};
+			for (let copyIndex = 0; copyIndex < copyObject.length; copyIndex++) {
+				const current = copyObject[copyIndex];
+				if (initialLine + current.index >= state.current.lines.length) {
+					break;
+				}
+				const pre = copyIndex > 0 ? copyObject[copyIndex - 1] : null;
+				const next = copyIndex < copyObject.length - 1 ? copyObject[copyIndex + 1] : null;
+				const dir = pre === null || pre.index + 1 < current.index ? -1 : next === null || current.index + 1 < next.index ? 1 : 0;
+				const firstLane = firstSection ? initialLane : 0;
+				pushWillConnect(copyIndex, firstLane, dir);
+				for (let lane = firstLane; lane < 4 && lane < current.object[current.object.length - 1].lane + firstLane; lane++) {
+					if (state.current.lines[current.index + initialLine].status[lane] !== current.object[lane - firstLane].status) {
+						state.current.lines[current.index + initialLine].status[lane] = current.object[lane - firstLane].status;
+						changed = true;
+					}
+				}
+				if (pre !== null && dir === -1) {
+					firstSection = false;
+				}
+			}
+			if (changed && willConnect.length > 0) {
+				willConnect.forEach((value) => { connectLongNotes(value, state.current.lines) });
+			}
+			if (changed) {
+				pushHistory(state.current, state.current.lines, state.historySize);
+			}
+		},
+		deleteSelected: (state) => {
+			let changed = false;
+			const willConnect: IChangeNotesStatus[] = [];
+			for (const select of state.rangeSelect.select) {
+				for (let line = select.line.start; line <= select.line.end; line++) {
+					for (let lane = select.lane.start; lane <= select.lane.end; lane++) {
+						const status = state.current.lines[line].status[lane];
+						if (status < 2) {
+							state.current.lines[line].status[lane] = NotesStatus.NONE;
+							changed = true;
+						} else if (status < 4) {
+							deleteLongNotes({lineIndex: line, laneIndex: lane, newStatus: NotesStatus.NONE}, state.current.lines);
+							changed = true;
+						}
+						if (line === select.line.start) {
+							const dir = line === select.line.start ? -1: 1;
+							for (let index = line + dir; index >= 0 && index < state.current.lines.length; index += dir) {
+								const status = state.current.lines[index].status[lane];
+								if ((dir < 0 && status === NotesStatus.LONG_START) || (dir > 0 && status === NotesStatus.LONG_END)) {
+									willConnect.push({lineIndex: index, laneIndex: lane, newStatus: dir < 0 ? NotesStatus.LONG_START : NotesStatus.LONG_END});
+								}
+							}
+						}
+					}
+				}
+			}
+			if (willConnect.length > 0) {
+				willConnect.forEach((starts) => {connectLongNotes(starts, state.current.lines)});
+			}
+			if (changed) {
+				pushHistory(state.current, state.current.lines, state.historySize);
+			}
 		},
 		saveTemporaryNotesOption: (state, action: PayloadAction<number>) => {
 			const { bpm, speed, barLine, barLineState, inBind } = state.current.lines[action.payload];
@@ -248,6 +402,10 @@ const mapStateModule = createSlice({
 		},
 		moveSection: (state, action: PayloadAction<number>) => {
 			state.current.currentSection = action.payload;
+		},
+		adoptSelection: (state, action: PayloadAction<ISelectRange[]>) => {
+			state.rangeSelect.select = action.payload;
+			state.selector = {baseX: 0, baseY: 0, x: 0, y: 0, width: 0, height: 0};
 		},
 		changeDifficulty: (state, action: PayloadAction<DifficlutySelect>) => {
 			state.current = state[action.payload];
@@ -333,8 +491,15 @@ function changeBeatSnap(mapState: IMapState, startIndex: number) {
 	return index;
 }
 
-export function assignSection(lineStates: INotesLineState[], sectionLinesCount: number) {
-	const halfBeatsInSection = sectionLinesCount / 2;
+export function getLineIndexesInSection(sectionIndex: number, sections: number[][][]) {
+	const halfBeats = sections[sectionIndex];
+	const first = halfBeats[0][0];
+	const last = halfBeats[halfBeats.length - 1][halfBeats[halfBeats.length - 1].length - 1];
+	return [...Array(last - first + 1)].map((value, index) => index + first);
+}
+
+export function assignSection(lineStates: INotesLineState[], sectionLineCount: number) {
+	const halfBeatsInSection = sectionLineCount / 2;
 	const sections: number[][][] = [];
 	let index = 0;
 	while (index < lineStates.length) {
