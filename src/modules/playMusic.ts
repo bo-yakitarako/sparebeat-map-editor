@@ -12,7 +12,7 @@ function* clapAudio() {
 	while (true) {
 		try {
 			const time = yield music.currentTime - (yield select((state: AppState) => state.startTime)) / 1000;
-			const activeTime = yield select((state: AppState) => state.current.activeTime);
+			const activeTime = yield select((state: AppState) => state[state.current].activeTime);
 			const clapIndex = yield select((state: AppState) => state.clapIndex);
 			if (clapIndex !== undefined && time > activeTime[clapIndex]) {
 				claps[clapIndex % clapAmount].volume = (yield select((state: AppState) => state.sliderValue.clapVolume)) / 100;
@@ -32,14 +32,13 @@ function* playMusic() {
 			const time = yield music.currentTime;
 			yield put(editorModule.actions.updateBarPos(time));
 			const sectionIndex = yield select((state: AppState) => state.barPos.section);
-			const sectionLength = yield select((state: AppState) => state.current.sectionLength);
+			const { sectionLength, currentSection } = yield select((state: AppState) => state[state.current]);
 			if (sectionIndex >= sectionLength) {
 				const sectionPos = { section: sectionLength - 1, pos: yield select((state: AppState) => sectionHeight(state)) };
 				music.pause();
 				yield put(editorModule.actions.moveBarPos(sectionPos));
 				yield put(editorModule.actions.pause());
 			} else {
-				const currentSection = yield select((state: AppState) => state.current.currentSection);
 				const column = yield select((state: AppState) => state.notesDisplay.column);
 				if (sectionIndex >= currentSection + column) {
 					yield put(editorModule.actions.moveSection(sectionIndex > sectionLength - column ? sectionLength - column : sectionIndex));

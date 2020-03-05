@@ -56,10 +56,11 @@ const SectionColumn: React.SFC<ISectionColumn> = (props: ISectionColumn) => {
 				}} /> : null}
 				<span style={{position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', fontSize: notesWidth / 3}}>{props.sectionIndex + 1}</span>
 				<Button icon={IconNames.ADD} minimal={true} style={{ width: notesWidth, height: notesHeignt, marginLeft: notesWidth * (props.sectionIndex > 0 ? 2 : 3), }} onClick={() => {
-					dispatch(mapStateModule.actions.addSection({ sectionIndex: props.sectionIndex, insertIndex: endIndex, lines: sectionLineCount}));
+					dispatch(mapStateModule.actions.addSection({ sectionIndex: props.sectionIndex, insertIndex: endIndex }));
 				}} />
 			</div>
 			<div id={`section${props.id}`} style={sectionStyle} >
+				<div style={{ position: 'absolute', width: 4 * notesWidth, height: '100%', left: 0, top: 0, backgroundColor: themeDark ? '#394B59' : '#EBF1F5', zIndex: -1}}></div>
 				{props.halfBeats.map((value, index) => <HalfBeat key={index} halfBeatIndex={index} notesIndexes={value} />)}
 				{[0, 1, 2, 3, 4].map((value) => {
 					return <div key={value} style={laneLineStyle(value * notesWidth)}></div>

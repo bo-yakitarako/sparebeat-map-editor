@@ -22,7 +22,8 @@ const editorStyle: React.CSSProperties = {
 
 function App() {
     const dispatch = useDispatch();
-    const { themeDark, editMode, current: { lines, currentSection } } = useSelector((state: AppState) => state);
+    const { themeDark, editMode } = useSelector((state: AppState) => state);
+    const { lines, currentSection } = useSelector((state: AppState) => state[state.current]);
     const { column, notesWidth, intervalRatio, aspect, sectionLineCount } = useSelector((state: AppState) => state.notesDisplay);
     const { baseX, baseY, x, y, width, height } = useSelector((state: AppState) => state.selector);
     const modeSelect = editMode === 'select';

@@ -21,7 +21,8 @@ export interface IChangeNotesStatus {
 const Line: React.SFC<ILine> = (props: ILine) => {
 	const [dialogOpened, open] = useState(false);
 	const dispatch = useDispatch();
-	const { themeDark, editMode, notesMode, temporaryNotesOption, current: { lines }, rangeSelect: { select } } = useSelector((state: AppState) => state);
+	const { themeDark, editMode, notesMode, temporaryNotesOption, rangeSelect: { select } } = useSelector((state: AppState) => state);
+	const { lines } = useSelector((state: AppState) => state[state.current]);
 	const { notesWidth, intervalRatio, aspect } = useSelector((state: AppState) => state.notesDisplay);
 	const currentLine = lines[props.lineIndex];
 	const height = notesWidth / aspect;

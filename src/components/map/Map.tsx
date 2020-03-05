@@ -9,8 +9,8 @@ import { NotesStatus } from './Notes';
 
 const Map = () => {
 	const dispatch = useDispatch();
-	const { currentTime, editMode } = useSelector((state: AppState) => state);
-	const { lines, currentSection, bpmChanges } = useSelector((state: AppState) => state.current);
+	const { currentTime, editMode, current } = useSelector((state: AppState) => state);
+	const { lines, currentSection, bpmChanges } = useSelector((state: AppState) => state[state.current]);
 	const { column, sectionLineCount } = useSelector((state: AppState) => state.notesDisplay);
 	const sections = assignSection(lines, sectionLineCount);
 	const sectionIndexes: number[] = [];
@@ -55,6 +55,7 @@ const Map = () => {
 	const infoTooltip = (
 		<table style={{textAlign: "left"}}>
 			<tbody>
+				<tr><td style={{textAlign: 'right', paddingRight: 5}}>難易度</td><td>{current.toUpperCase()}</td></tr>
 				<tr><td style={{textAlign: 'right', paddingRight: 5}}>ノーツ数</td><td>{notesCount.notes}</td></tr>
 				<tr><td style={{ textAlign: 'right', paddingRight: 5 }}>AN数</td><td>{notesCount.attack}</td></tr>
 				<tr><td style={{ textAlign: 'right', paddingRight: 5 }}>密度</td><td>{(notesCount.notes / lastTime).toFixed(2)}{" "}N/秒</td></tr>
@@ -67,11 +68,16 @@ const Map = () => {
 				{sectionIndexes.map((value, index) => <SectionColumn key={value} id={index} sectionIndex={value} halfBeats={sections[value]} />)}
 			</div>
 			<div style={{position: 'relative', marginTop: '20px', textAlign: 'center', width: '100%'}}>
+				<Button disabled={currentSection <= 0} minimal={true} icon={IconNames.CIRCLE_ARROW_LEFT} style={pageJumpButtonStyle} onClick={() => {dispatch(mapStateModule.actions.moveSection(0))}} />
 				<Button disabled={currentSection <= 0} minimal={true} icon={IconNames.DOUBLE_CHEVRON_LEFT} style={{ width: 40 }} onClick={moveSection(- column)} />
 				<Button disabled={currentSection <= 0} minimal={true} icon={IconNames.CHEVRON_LEFT} style={pageJumpButtonStyle} onClick={moveSection(-1)} />
 				<span>{currentSection + 1} - {currentSection + pageLength <= sections.length ? currentSection + pageLength : sections.length} / {sections.length}</span>
 				<Button disabled={currentSection + pageLength >= sections.length} minimal={true} icon={IconNames.CHEVRON_RIGHT} style={pageJumpButtonStyle} onClick={moveSection(1)} />
 				<Button disabled={currentSection + pageLength >= sections.length} minimal={true} icon={IconNames.DOUBLE_CHEVRON_RIGHT} style={{ width: 40 }} onClick={moveSection(column)} />
+				<Button disabled={currentSection + pageLength >= sections.length} minimal={true} icon={IconNames.CIRCLE_ARROW_RIGHT} style={pageJumpButtonStyle} onClick={() => {
+					const lastIndex = sections.length - column;
+					dispatch(mapStateModule.actions.moveSection(lastIndex < 0 ? 0 : lastIndex));
+				}} />
 				<div style={{position: 'absolute', top: 0, right: 0, width: '200px', fontSize: '20px'}} >
 					<Tooltip content={infoTooltip} >
 						<Icon style={{cursor: 'pointer'}} icon={IconNames.INFO_SIGN} iconSize={24} />

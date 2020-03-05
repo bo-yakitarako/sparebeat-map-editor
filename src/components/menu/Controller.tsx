@@ -39,14 +39,8 @@ const Controller = () => {
 	const dispatch = useDispatch();
 	const putting = true;
 	const notesWidth = 60;
-	const loaded = useSelector((state: AppState) => state.loaded);
-	const editMode = useSelector((state: AppState) => state.editMode);
-	const notesMode = useSelector((state: AppState) => state.notesMode);
-	const currentTime = useSelector((state: AppState) => state.currentTime);
-	const playing = useSelector((state: AppState) => state.playing);
-	const mapState = useSelector((state: AppState) => state.current);
-	const startTime = useSelector((state: AppState) => state.startTime);
-	const sliderValue = useSelector((state: AppState) => state.sliderValue);
+	const { loaded, editMode, notesMode, currentTime, playing, startTime, sliderValue } = useSelector((state: AppState) => state);
+	const { snap24, linesHistory, historyIndex } = useSelector((state: AppState) => state[state.current]);
 	if (!playing) {
 		music.pause();
 	}
@@ -81,11 +75,11 @@ const Controller = () => {
 			</ButtonGroup>
 			<Divider />
 				<p>ビートスナップ変更</p>
-				<Button disabled={!loaded} icon={IconNames.EXCHANGE} text={`1/4 ${mapState.snap24 ? '←' : '→'} 1/6`} onClick={() => dispatch(mapStateModule.actions.changeSnap())} />
+				<Button disabled={!loaded} icon={IconNames.EXCHANGE} text={`1/4 ${snap24 ? '←' : '→'} 1/6`} onClick={() => dispatch(mapStateModule.actions.changeSnap())} />
 			<Divider />
 			<ButtonGroup fill={true} vertical={true}>
-				<Button disabled={!loaded || mapState.historyIndex === 0} icon={IconNames.UNDO} text='元に戻す' onClick={() => dispatch(mapStateModule.actions.undo())} />
-				<Button disabled={!loaded || mapState.historyIndex === mapState.linesHistory.length - 1} icon={IconNames.REDO} text='やり直し' onClick={() => dispatch(mapStateModule.actions.redo())} />
+				<Button disabled={!loaded || historyIndex === 0} icon={IconNames.UNDO} text='元に戻す' onClick={() => dispatch(mapStateModule.actions.undo())} />
+				<Button disabled={!loaded || historyIndex === linesHistory.length - 1} icon={IconNames.REDO} text='やり直し' onClick={() => dispatch(mapStateModule.actions.redo())} />
 			</ButtonGroup>
 			<Divider />
 			<p>Music Player</p>

@@ -29,22 +29,22 @@ const notesColors = {
 
 const NotesComponent: React.SFC<INotes> = (props: INotes) => {
 	const dispatch = useDispatch();
+	const { themeDark, editMode, rangeSelect } = useSelector((state: AppState) => state);;
 	const height = props.width / (props.aspect ? props.aspect : 2.5);
 	const boxStyle: React.CSSProperties = {
 		position: 'relative',
 		display: 'inline-block',
 		width: `${props.width}px`,
 		height: `${height}px`,
-		cursor: props.status !== NotesStatus.INVALID ? 'pointer' : 'default',
+		cursor: props.status === NotesStatus.INVALID && editMode !== 'select' ? 'default' : 'pointer',
 		zIndex: 0,
 	};
-	const { themeDark, editMode, rangeSelect } = useSelector((state: AppState) => state);;
 	const barLineStyle: React.CSSProperties = {
 		position: 'absolute',
 		left: `0px`,
-		top: `${height / 2 - 1.5}px`,
+		top: `${height / 2 - 1}px`,
 		width: `100%`,
-		height: '3px',
+		height: '2px',
 		backgroundColor: themeDark ? "#BFCCD6" : "#5C7080",
 		zIndex: 2,
 	};
