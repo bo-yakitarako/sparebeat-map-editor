@@ -5,7 +5,8 @@ import { NumericInput, Card, Elevation, Divider, Button, ButtonGroup, Slider } f
 import { IconNames } from '@blueprintjs/icons';
 import Notes, { NotesStatus } from '../map/Notes';
 import mapStateModule from '../../modules/editorModule';
-import editorSettingModule, { EditMode, NotesMode, Slider as SliderType } from '../../modules/editorModule';
+import editorModule, { EditMode, NotesMode, Slider as SliderType } from '../../modules/editorModule';
+import { clapActiveTime, stopClap } from '../../modules/music/clapModule';
 
 const controllerStyle: React.CSSProperties = {
 	display: "inline-flex",
@@ -40,24 +41,33 @@ const Controller = () => {
 	const putting = true;
 	const notesWidth = 60;
 	const { loaded, editMode, notesMode, currentTime, playing, startTime, sliderValue } = useSelector((state: AppState) => state);
-	const { snap24, linesHistory, historyIndex } = useSelector((state: AppState) => state[state.current]);
+	const { snap24, linesHistory, historyIndex, activeTime } = useSelector((state: AppState) => state[state.current]);
+	music.onloadeddata = () => {
+		dispatch(editorModule.actions.load());
+	};
 	if (!playing) {
 		music.pause();
 	}
 	const changeEdit = (mode: EditMode) => () => {
-		dispatch(editorSettingModule.actions.changeEditMode(mode));
+		dispatch(editorModule.actions.changeEditMode(mode));
 	}
 	const changeNotes = (mode: NotesMode) => () => {
-		dispatch(editorSettingModule.actions.changeNotesMode(mode));
+		dispatch(editorModule.actions.changeNotesMode(mode));
 	};
 	const changeSliderValue = (slider: SliderType) => (value: number) => {
-		dispatch(editorSettingModule.actions.changeSliderValue({slider: slider, value: value}));
+		dispatch(editorModule.actions.changeSliderValue({slider: slider, value: value}));
+	};
+	const pause = () => {
+		music.pause();
+		music.currentTime = currentTime;
+		stopClap();
+		dispatch(editorModule.actions.pause());
 	};
 
 	return (
 		<Card elevation={Elevation.TWO} style={controllerStyle}>
 			<p>Start Time</p>
-			<NumericInput disabled={!loaded} placeholder="Start Time" style={{width: "120px"}} value={startTime} onValueChange={(value) => {dispatch(editorSettingModule.actions.setStartTime({value: value, time: music.currentTime}))}} />
+			<NumericInput disabled={!loaded} placeholder="Start Time" style={{width: "120px"}} value={startTime} onValueChange={(value) => {dispatch(editorModule.actions.setStartTime({value: value, time: music.currentTime}))}} />
 			<Divider />
 			<p>編集ツール</p>
 			<ButtonGroup fill={true}>
@@ -87,18 +97,17 @@ const Controller = () => {
 			<ButtonGroup fill={true}>
 				<Button disabled={!loaded} icon={!playing ? IconNames.PLAY : IconNames.PAUSE} onClick={() => {
 					if (!playing) {
-						dispatch(editorSettingModule.actions.play());
+						dispatch(editorModule.actions.play());
 						music.play();
+						clapActiveTime(activeTime, currentTime, startTime, sliderValue.playbackRate, sliderValue.clapVolume);
 					} else {
-						dispatch(editorSettingModule.actions.pause());
-						music.pause();
+						pause();
 					}
 				}} />
 				<Button disabled={!loaded} icon={IconNames.STOP} onClick={() => {
-					music.pause();
-					dispatch(editorSettingModule.actions.pause());
-					dispatch(editorSettingModule.actions.updateCurrentTime(0));
-					dispatch(editorSettingModule.actions.updateBarPos(0));
+					pause();
+					dispatch(editorModule.actions.updateCurrentTime(0));
+					dispatch(editorModule.actions.updateBarPos(0));
 					music.currentTime = 0;
 				}} />
 			</ButtonGroup>
@@ -107,8 +116,10 @@ const Controller = () => {
 			<Slider disabled={!loaded} max={1000} labelRenderer={false} value={sliderValue.timePosition} />
 			<br />
 			<div>再生速度</div>
-			<Slider min={1} max={100} intent="success" labelRenderer={false} value={sliderValue.playbackRate} onChange={changeSliderValue('playbackRate')} onRelease={
-				(value: number) => { music.playbackRate = value / 100 }
+			<Slider min={1} max={100} intent="success" labelRenderer={false} value={sliderValue.playbackRate} onChange={changeSliderValue('playbackRate')} onRelease={(value: number) => {
+					music.playbackRate = value / 100;
+					pause();
+				 }
 			} />
 			<br />
 			<div>楽曲音量</div>

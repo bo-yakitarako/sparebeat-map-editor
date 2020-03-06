@@ -4,12 +4,12 @@ import { AppState } from '../../store';
 import SectionColumn from './notesUnit/SectionColumn';
 import { Button, Icon, Tooltip } from '@blueprintjs/core';
 import { IconNames } from '@blueprintjs/icons';
-import mapStateModule, { assignSection, INotesLineState } from '../../modules/editorModule';
+import editorModule, { assignSection, INotesLineState } from '../../modules/editorModule';
 import { NotesStatus } from './Notes';
 
 const Map = () => {
 	const dispatch = useDispatch();
-	const { currentTime, editMode, current } = useSelector((state: AppState) => state);
+	const { currentTime, editMode, current, playing } = useSelector((state: AppState) => state);
 	const { lines, currentSection, bpmChanges } = useSelector((state: AppState) => state[state.current]);
 	const { column, sectionLineCount } = useSelector((state: AppState) => state.notesDisplay);
 	const sections = assignSection(lines, sectionLineCount);
@@ -36,15 +36,15 @@ const Map = () => {
 	}
 	const moveSection = (movement: number) => () => {
 		const nextSection = currentSection + movement;
-		dispatch(mapStateModule.actions.moveSection(nextSection < 0 ? 0 : nextSection > sections.length - column ? sections.length - column : nextSection));
+		dispatch(editorModule.actions.moveSection(nextSection < 0 ? 0 : nextSection > sections.length - column ? sections.length - column : nextSection));
 	};
 	const getSectionPos = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-		if (editMode === 'music') {
+		if (editMode === 'music' && !playing) {
 			for (let i = 0; i < sectionIndexes.length; i++) {
 				const rect = document.getElementById(`section${i}`)?.getBoundingClientRect();
 				if (rect && rect.left < e.clientX && e.clientX < rect.right && rect.top < e.clientY && e.clientY < rect.bottom) {
 					const sectionPos = {section: i + currentSection, pos: rect.bottom - e.clientY};
-					dispatch(mapStateModule.actions.moveBarPos(sectionPos));
+					dispatch(editorModule.actions.moveBarPos(sectionPos));
 					break;
 				}
 			}
@@ -68,7 +68,7 @@ const Map = () => {
 				{sectionIndexes.map((value, index) => <SectionColumn key={value} id={index} sectionIndex={value} halfBeats={sections[value]} />)}
 			</div>
 			<div style={{position: 'relative', marginTop: '20px', textAlign: 'center', width: '100%'}}>
-				<Button disabled={currentSection <= 0} minimal={true} icon={IconNames.CIRCLE_ARROW_LEFT} style={pageJumpButtonStyle} onClick={() => {dispatch(mapStateModule.actions.moveSection(0))}} />
+				<Button disabled={currentSection <= 0} minimal={true} icon={IconNames.CIRCLE_ARROW_LEFT} style={pageJumpButtonStyle} onClick={() => {dispatch(editorModule.actions.moveSection(0))}} />
 				<Button disabled={currentSection <= 0} minimal={true} icon={IconNames.DOUBLE_CHEVRON_LEFT} style={{ width: 40 }} onClick={moveSection(- column)} />
 				<Button disabled={currentSection <= 0} minimal={true} icon={IconNames.CHEVRON_LEFT} style={pageJumpButtonStyle} onClick={moveSection(-1)} />
 				<span>{currentSection + 1} - {currentSection + pageLength <= sections.length ? currentSection + pageLength : sections.length} / {sections.length}</span>
@@ -76,7 +76,7 @@ const Map = () => {
 				<Button disabled={currentSection + pageLength >= sections.length} minimal={true} icon={IconNames.DOUBLE_CHEVRON_RIGHT} style={{ width: 40 }} onClick={moveSection(column)} />
 				<Button disabled={currentSection + pageLength >= sections.length} minimal={true} icon={IconNames.CIRCLE_ARROW_RIGHT} style={pageJumpButtonStyle} onClick={() => {
 					const lastIndex = sections.length - column;
-					dispatch(mapStateModule.actions.moveSection(lastIndex < 0 ? 0 : lastIndex));
+					dispatch(editorModule.actions.moveSection(lastIndex < 0 ? 0 : lastIndex));
 				}} />
 				<div style={{position: 'absolute', top: 0, right: 0, width: '200px', fontSize: '20px'}} >
 					<Tooltip content={infoTooltip} >

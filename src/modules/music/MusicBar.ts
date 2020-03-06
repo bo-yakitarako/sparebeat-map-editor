@@ -1,4 +1,4 @@
-import { IEditorState } from './editorModule';
+import { IEditorState } from '../editorModule';
 
 export interface IBpmChanges {
 	bpm: number;

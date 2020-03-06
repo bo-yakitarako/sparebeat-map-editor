@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import MusicBar, { SectionPos } from './MusicBar';
+import MusicBar, { SectionPos } from './music/MusicBar';
 import { NotesStatus } from '../components/map/Notes';
 import { IChangeNotesStatus } from '../components/map/notesUnit/Line';
 import SparebeatJsonLoader from './mapConvert/SparebeatJsonLoader';
@@ -25,7 +25,7 @@ export interface IMapState {
 	linesHistory: INotesLineState[][];
 	historyIndex: number;
 	bpmChanges: { bpm: number, time: number }[];
-	activeTime: number[];
+	activeTime: { count: number, time: number }[];
 }
 
 export interface ISelectRange {
@@ -64,8 +64,10 @@ export interface IEditorState {
 		aspect: number;
 	};
 	barWidth: number;
-	playing: boolean;
 	barPos: SectionPos;
+	music: string;
+	audio: any;
+	playing: boolean;
 	sliderValue: {
 		timePosition: number;
 		playbackRate: number;
@@ -115,6 +117,7 @@ export interface IEditorState {
 const initialSectionCount = 16;
 const loader = new SparebeatJsonLoader(testJson);
 const { title, beats, startTime, level, artist, url, bgColor } = loader.info;
+
 // const initialMapState: IMapState = { bpm: initialBpm, snap24: false, currentSection: 0, sectionLength: 4, lines: [], linesHistory: [], historyIndex: 0, bpmChanges: [], activeTime: [] };
 // for (let i = 0; i < 4 * initialSectionCount; i++) {
 // 	const lineState: INotesLineState = { status: [...initialNotesStatus], inBind: false, snap24: false, bpm: initialBpm, barLine: i % initialSectionCount === 0, speed: 1.0, barLineState: true };
@@ -125,7 +128,7 @@ const { title, beats, startTime, level, artist, url, bgColor } = loader.info;
 
 const initialState: IEditorState = {
 	themeDark: true,
-	loaded: true,
+	loaded: false,
 	editMode: 'add',
 	notesMode: 'normal',
 	notesDisplay: {
@@ -137,6 +140,8 @@ const initialState: IEditorState = {
 	},
 	barWidth: 4,
 	barPos: { section: 0, pos: 24 / 2.5 - 2 },
+	music: '',
+	audio: null,
 	playing: false,
 	sliderValue: {
 		timePosition: 0,
@@ -197,32 +202,47 @@ const mapStateModule = createSlice({
 	name: 'notesState',
 	initialState: initialState,
 	reducers: {
-		changeTheme: (state, action: PayloadAction<boolean>) => {
+		changeTheme: (state: IEditorState, action: PayloadAction<boolean>) => {
 			state.themeDark = action.payload;
 		},
-		load: (state) => {
+		load: (state: IEditorState) => {
 			state.loaded = true;
 		},
-		changeEditMode: (state, action: PayloadAction<EditMode>) => {
+		loadMusic: (state: IEditorState) => {
+			const music = (document.querySelector('#music') as HTMLAudioElement);
+			if (music.src === '') {
+				const xhr = new XMLHttpRequest();
+				xhr.open('GET', localStorage.music, true);
+				xhr.responseType = 'arraybuffer';
+				xhr.onload = () => {
+					const bytes = new Uint8Array(xhr.response);
+					const binaryString = bytes.reduce((pre, cur) => pre + String.fromCharCode(cur), "");
+					const base64Data = window.btoa(binaryString);
+					music.src = "data:audio/mp3;base64," + base64Data;
+				};
+				xhr.send();
+			}
+		},
+		changeEditMode: (state: IEditorState, action: PayloadAction<EditMode>) => {
 			state.rangeSelect.select = [];
 			state.editMode = action.payload;
 		},
-		changeNotesMode: (state, action: PayloadAction<NotesMode>) => {
+		changeNotesMode: (state: IEditorState, action: PayloadAction<NotesMode>) => {
 			state.notesMode = action.payload;
 		},
-		play: (state) => {
+		play: (state: IEditorState) => {
 			state.playing = true;
 		},
-		pause: (state) => {
+		pause: (state: IEditorState) => {
 			state.playing = false;
 		},
-		updateBarPos: (state, action: PayloadAction<number>) => {
+		updateBarPos: (state: IEditorState, action: PayloadAction<number>) => {
 			state.currentTime = action.payload;
 			state.sliderValue.timePosition = 1000 * (action.payload / (document.getElementById('music') as HTMLAudioElement).duration);
 			const musicBar = new MusicBar(state, state[state.current].bpmChanges);
 			state.barPos = musicBar.currentPosition(action.payload);
 		},
-		moveBarPos: (state, action: PayloadAction<SectionPos>) => {
+		moveBarPos: (state: IEditorState, action: PayloadAction<SectionPos>) => {
 			const musicBar = new MusicBar(state, state[state.current].bpmChanges);
 			const time = musicBar.posToTime(action.payload);
 			state.currentTime = time;
@@ -231,30 +251,30 @@ const mapStateModule = createSlice({
 			state.clapIndex = searchClapIndex(state, time);
 			(document.getElementById('music') as HTMLAudioElement).currentTime = time;
 		},
-		updateCurrentTime: (state, action: PayloadAction<number>) => {
+		updateCurrentTime: (state: IEditorState, action: PayloadAction<number>) => {
 			state.currentTime = action.payload;
 			state.sliderValue.timePosition = 1000 * (action.payload / (document.getElementById('music') as HTMLAudioElement).duration);
 			state.clapIndex = searchClapIndex(state, action.payload);
 		},
-		updateClapIndex: (state, action: PayloadAction<number>) => {
+		updateClapIndex: (state: IEditorState, action: PayloadAction<number>) => {
 			state.clapIndex = searchClapIndex(state, action.payload, state.clapIndex);
 		},
-		changeSliderValue: (state, action: PayloadAction<{slider: Slider, value: number}>) => {
+		changeSliderValue: (state: IEditorState, action: PayloadAction<{slider: Slider, value: number}>) => {
 			state.sliderValue[action.payload.slider] = action.payload.value;
 		},
-		updateInfo: (state, action: PayloadAction<{info: 'title' | 'artist' | 'url', value: string}>) => {
+		updateInfo: (state: IEditorState, action: PayloadAction<{info: 'title' | 'artist' | 'url', value: string}>) => {
 			state.info[action.payload.info] = action.payload.value;
 		},
-		setStartTime: (state, action: PayloadAction<{value: number, time: number}>) => {
+		setStartTime: (state: IEditorState, action: PayloadAction<{value: number, time: number}>) => {
 			state.startTime = isNaN(action.payload.value) ? 0 : action.payload.value;
 			const musicBar = new MusicBar(state, state[state.current].bpmChanges);
 			state.barPos = musicBar.currentPosition(action.payload.time);
 		},
-		setSelectorBase: (state, action: PayloadAction<{x: number, y: number}>) => {
+		setSelectorBase: (state: IEditorState, action: PayloadAction<{x: number, y: number}>) => {
 			state.selector.baseX = action.payload.x;
 			state.selector.baseY = action.payload.y;
 		},
-		setSelectorRect: (state, action: PayloadAction<{x: number, y: number}>) => {
+		setSelectorRect: (state: IEditorState, action: PayloadAction<{x: number, y: number}>) => {
 			const { x, y } = action.payload;
 			const { baseX, baseY } = state.selector;
 			state.selector.x = x < baseX ? x : baseX;
@@ -262,7 +282,7 @@ const mapStateModule = createSlice({
 			state.selector.width = Math.abs(baseX - x);
 			state.selector.height = Math.abs(baseY - y);
 		},
-		changeNotesStatus: (state, action: PayloadAction<IChangeNotesStatus>) => {
+		changeNotesStatus: (state: IEditorState, action: PayloadAction<IChangeNotesStatus>) => {
 			const line = action.payload.lineIndex;
 			const lane = action.payload.laneIndex;
 			const status = state[state.current].lines[line].status[lane];
@@ -288,7 +308,7 @@ const mapStateModule = createSlice({
 			state.clapIndex = searchClapIndex(state);
 			pushHistory(state[state.current], state[state.current].lines, state.historySize);
 		},
-		copySelect: (state) => {
+		copySelect: (state: IEditorState) => {
 			const { select } = state.rangeSelect;
 			if (select.length === 0) {
 				return;
@@ -307,7 +327,7 @@ const mapStateModule = createSlice({
 			});
 			state.rangeSelect.copy = copyObject;
 		},
-		pasteSelect: (state, action: PayloadAction<{initialLine: number, initialLane: number}>) => {
+		pasteSelect: (state: IEditorState, action: PayloadAction<{initialLine: number, initialLane: number}>) => {
 			const { initialLine, initialLane } = action.payload;
 			const copyObject = state.rangeSelect.copy;
 			const willConnect: IChangeNotesStatus[] = [];
@@ -362,7 +382,7 @@ const mapStateModule = createSlice({
 				pushHistory(state[state.current], state[state.current].lines, state.historySize);
 			}
 		},
-		deleteSelected: (state) => {
+		deleteSelected: (state: IEditorState) => {
 			let changed = false;
 			const willConnect: IChangeNotesStatus[] = [];
 			for (const select of state.rangeSelect.select) {
@@ -397,21 +417,21 @@ const mapStateModule = createSlice({
 				pushHistory(state[state.current], state[state.current].lines, state.historySize);
 			}
 		},
-		saveTemporaryNotesOption: (state, action: PayloadAction<number>) => {
+		saveTemporaryNotesOption: (state: IEditorState, action: PayloadAction<number>) => {
 			const { bpm, speed, barLine, barLineState, inBind } = state[state.current].lines[action.payload];
 			state.temporaryNotesOption = { bpm: bpm, speed: speed, barLine: barLine, barLineState: barLineState, inBind: inBind };
 		},
-		updateTemporaryNotesOption: (state, action: PayloadAction<{index: number, target: NotesOption, value: number | boolean}>) => {
+		updateTemporaryNotesOption: (state: IEditorState, action: PayloadAction<{index: number, target: NotesOption, value: number | boolean}>) => {
 			if (typeof action.payload.value === 'boolean') {
 				(state.temporaryNotesOption[action.payload.target] as boolean) = action.payload.value;
 			} else {
 				(state.temporaryNotesOption[action.payload.target] as number) = action.payload.value;
 			}
 		},
-		changeNotesOption: (state, action: PayloadAction<{lineIndex: number, target: NotesOption, update: number | boolean}>) => {
+		changeNotesOption: (state: IEditorState, action: PayloadAction<{lineIndex: number, target: NotesOption, update: number | boolean}>) => {
 			updateNotesOption(action.payload.lineIndex, action.payload.target, action.payload.update, state);
 		},
-		addSection: (state, action: PayloadAction<{ sectionIndex: number, insertIndex: number }>) => {
+		addSection: (state: IEditorState, action: PayloadAction<{ sectionIndex: number, insertIndex: number }>) => {
 			const { notesDisplay: { sectionLineCount, column }, historySize } = state;
 			const { snap24, lines, currentSection, sectionLength } = state[state.current];
 			const insertLine = lines[action.payload.insertIndex];
@@ -430,7 +450,7 @@ const mapStateModule = createSlice({
 			state.clapIndex = searchClapIndex(state);
 			pushHistory(state[state.current], state[state.current].lines, historySize);
 		},
-		removeSection: (state, action: PayloadAction<number[][]>) => {
+		removeSection: (state: IEditorState, action: PayloadAction<number[][]>) => {
 			adjustCurrentSection(state, 1);
 			removeSection(state[state.current], action.payload);
 			state[state.current].sectionLength--;
@@ -438,26 +458,26 @@ const mapStateModule = createSlice({
 			state.clapIndex = searchClapIndex(state);
 			pushHistory(state[state.current], state[state.current].lines, state.historySize);
 		},
-		addHistory: (state) => {
+		addHistory: (state: IEditorState) => {
 			pushHistory(state[state.current], state[state.current].lines, state.historySize);
 		},
-		changeSnap: (state) => {
+		changeSnap: (state: IEditorState) => {
 			changeWholeBeatSnap(state[state.current]);
 		},
-		setupBpm: (state, action: PayloadAction<number>) => {
+		setupBpm: (state: IEditorState, action: PayloadAction<number>) => {
 			state[state.current].bpm = action.payload;
 		},
-		moveSection: (state, action: PayloadAction<number>) => {
+		moveSection: (state: IEditorState, action: PayloadAction<number>) => {
 			state[state.current].currentSection = action.payload;
 		},
-		adoptSelection: (state, action: PayloadAction<ISelectRange[]>) => {
+		adoptSelection: (state: IEditorState, action: PayloadAction<ISelectRange[]>) => {
 			state.rangeSelect.select = action.payload;
 			state.selector = {baseX: 0, baseY: 0, x: 0, y: 0, width: 0, height: 0};
 		},
-		changeDifficulty: (state, action: PayloadAction<DifficlutySelect>) => {
+		changeDifficulty: (state: IEditorState, action: PayloadAction<DifficlutySelect>) => {
 			state[state.current] = state[action.payload];
 		},
-		undo: (state) => {
+		undo: (state: IEditorState) => {
 			state[state.current].historyIndex--;
 			if (state[state.current].historyIndex < 0) {
 				state[state.current].historyIndex = 0;
@@ -468,7 +488,7 @@ const mapStateModule = createSlice({
 			state.clapIndex = searchClapIndex(state);
 			adjustCurrentSection(state, 0);
 		},
-		redo: (state) => {
+		redo: (state: IEditorState) => {
 			state[state.current].historyIndex++;
 			if (state[state.current].historyIndex > state[state.current].linesHistory.length - 1) {
 				state[state.current].historyIndex = state[state.current].linesHistory.length - 1;
@@ -593,19 +613,20 @@ function searchClapIndex(state: IEditorState, time?: number, index: number = 0):
 	}
 	if (state[state.current].activeTime.length === 0 || state[state.current].activeTime.length <= index) {
 		return undefined;
-	} else if (time <= state[state.current].activeTime[0]) {
+	} else if (time <= state[state.current].activeTime[0].time) {
 		return 0;
 	} else {
-		return state[state.current].activeTime[index] < time && time < state[state.current].activeTime[index + 1] ? index + 1 : searchClapIndex(state, time, index + 1);
+		return state[state.current].activeTime[index].time < time && time < state[state.current].activeTime[index + 1].time ? index + 1 : searchClapIndex(state, time, index + 1);
 	}
 }
 
 export function searchActiveTime(lines: INotesLineState[]) {
 	let time = 0;
-	const activeTime: number[] = [];
+	const activeTime: { count: number, time: number }[] = [];
 	for (const lineState of lines) {
-		if (isActiveLine(lineState)) {
-			activeTime.push(time);
+		const count = lineState.status.reduce((pre, cur) => pre + (cur < 4 ? 1 : 0), 0);
+		if (count > 0) {
+			activeTime.push({ count: count, time: time });
 		}
 		time += (lineState.snap24 ? 10 : 15) / lineState.bpm;
 	}

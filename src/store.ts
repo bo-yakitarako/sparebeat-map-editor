@@ -1,7 +1,7 @@
 import { configureStore, getDefaultMiddleware } from "@reduxjs/toolkit";
 import createSagaMiddleware from 'redux-saga'
 import mapStateModule from './modules/editorModule';
-import rootSaga from './modules/playMusic';
+import rootSaga from './modules/music/playMusic';
 
 // const rootReducer = combineReducers({
 // 	mapState: mapStateModule.reducer,

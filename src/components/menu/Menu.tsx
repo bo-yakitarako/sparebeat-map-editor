@@ -45,11 +45,13 @@ const Menu = () => {
 					<Button disabled={!loaded} className={Classes.MINIMAL} icon={IconNames.MULTI_SELECT} large={true} />
 				</Tooltip>
 				<Tooltip content="背景色設定">
-					<Button disabled={!loaded} className={Classes.MINIMAL} icon={IconNames.STYLE} large={true} />
+					<Button disabled={!loaded} className={Classes.MINIMAL} icon={IconNames.STYLE} large={true} onClick={() => {
+					}} />
 				</Tooltip>
 				<NavbarDivider />
 				<Tooltip content="テストプレイ">
-					<Button disabled={!loaded} className={Classes.MINIMAL} icon={IconNames.DESKTOP} large={true} />
+					<Button disabled={!loaded} className={Classes.MINIMAL} icon={IconNames.DESKTOP} large={true} onClick={() => {
+					}} />
 				</Tooltip>
 				<Tooltip content="譜面ファイルをクリップボードにコピー、一時保存">
 					<Button disabled={!loaded} className={Classes.MINIMAL} icon={IconNames.SAVED} large={true} onClick={() => {
