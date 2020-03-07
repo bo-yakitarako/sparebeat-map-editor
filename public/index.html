@@ -7,11 +7,17 @@
       name="description"
       content="ブラウザ音楽ゲーム『Sparebeat』の譜面を作成するためのツールです"
     />
+    <link href="https://fonts.googleapis.com/css?family=Russo+One&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Nova+Mono&display=swap" rel="stylesheet">
     <title>Sparebeat Map Editor</title>
   </head>
   <body oncontextmenu="return false">
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
     <audio id="music"></audio>
+    <form id="testplay_form" name="testplay_form" action="https://test.editor.sparebeat.bo-yakitarako.com/" method="post" target="_blank">
+      <input id="form_music" name="music" type="hidden" value="" />
+      <input id="form_map" name="map" type="hidden" value="" />
+    </form>
   </body>
 </html>

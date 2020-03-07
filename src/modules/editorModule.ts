@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { cloneDeep } from 'lodash';
 import MusicBar, { SectionPos } from './music/MusicBar';
 import { NotesStatus } from '../components/map/Notes';
 import { IChangeNotesStatus } from '../components/map/notesUnit/Line';
@@ -17,7 +18,6 @@ export interface INotesLineState {
 }
 
 export interface IMapState {
-	bpm: number;
 	snap24: boolean;
 	currentSection: number;
 	sectionLength: number;
@@ -48,11 +48,13 @@ export interface ICopyObject {
 }
 
 export type DifficlutySelect = 'easy' | 'normal' | 'hard';
+export type SparebeatTheme = 'default' | 'sunset' | '39';
 export type EditMode = 'add' | 'select' | 'music';
 export type NotesMode = 'normal' | 'attack' | 'longStart' | 'longEnd';
 export type Slider = 'timePosition' | 'playbackRate' | 'musicVolume' | 'clapVolume';
 export interface IEditorState {
 	themeDark: boolean;
+	sparebeatTheme: SparebeatTheme;
 	loaded: boolean;
 	editMode: EditMode;
 	notesMode: NotesMode;
@@ -65,8 +67,6 @@ export interface IEditorState {
 	};
 	barWidth: number;
 	barPos: SectionPos;
-	music: string;
-	audio: any;
 	playing: boolean;
 	sliderValue: {
 		timePosition: number;
@@ -98,15 +98,14 @@ export interface IEditorState {
 		artist: string;
 		url: string;
 		level: {
-			easy: number | string;
-			normal: number | string;
-			hard: number | string;
+			easy: string;
+			normal: string;
+			hard: string;
 		};
 		bgColor: string[];
 	};
 	startTime: number;
 	currentTime: number;
-	clapIndex: number | undefined;
 	current: DifficlutySelect;
 	easy: IMapState;
 	normal: IMapState;
@@ -128,6 +127,7 @@ const { title, beats, startTime, level, artist, url, bgColor } = loader.info;
 
 const initialState: IEditorState = {
 	themeDark: true,
+	sparebeatTheme: 'sunset',
 	loaded: false,
 	editMode: 'add',
 	notesMode: 'normal',
@@ -140,13 +140,11 @@ const initialState: IEditorState = {
 	},
 	barWidth: 4,
 	barPos: { section: 0, pos: 24 / 2.5 - 2 },
-	music: '',
-	audio: null,
 	playing: false,
 	sliderValue: {
 		timePosition: 0,
 		playbackRate: 100,
-		musicVolume: 10,
+		musicVolume: 100,
 		clapVolume: 100,
 	},
 	temporaryNotesOption: {
@@ -166,12 +164,15 @@ const initialState: IEditorState = {
 		title: title !== undefined ? title : '',
 		artist: artist !== undefined ? artist : '',
 		url: url !== undefined ? url : '',
-		level: level,
+		level: {
+			easy: level.easy.toString(),
+			normal: level.normal.toString(),
+			hard: level.hard.toString(),
+		},
 		bgColor: bgColor !== undefined ? bgColor : [],
 	},
 	startTime: startTime,
 	currentTime: 0.0,
-	clapIndex: undefined,
 	current: 'hard',
 	easy: loader.getMapState('easy') as IMapState,
 	normal: loader.getMapState('normal') as IMapState,
@@ -198,12 +199,16 @@ const adjustCurrentSection = (state: IEditorState, target: number) => {
 	}
 }
 
+const music = document.querySelector('#music') as HTMLAudioElement;
 const mapStateModule = createSlice({
 	name: 'notesState',
 	initialState: initialState,
 	reducers: {
 		changeTheme: (state: IEditorState, action: PayloadAction<boolean>) => {
 			state.themeDark = action.payload;
+		},
+		changeSparebeatTheme: (state: IEditorState, action: PayloadAction<SparebeatTheme>) => {
+			state.sparebeatTheme = action.payload;
 		},
 		load: (state: IEditorState) => {
 			state.loaded = true;
@@ -212,13 +217,13 @@ const mapStateModule = createSlice({
 			const music = (document.querySelector('#music') as HTMLAudioElement);
 			if (music.src === '') {
 				const xhr = new XMLHttpRequest();
-				xhr.open('GET', localStorage.music, true);
+				xhr.open('GET', 'media/Grievous_Lady.mp3', true);
 				xhr.responseType = 'arraybuffer';
 				xhr.onload = () => {
 					const bytes = new Uint8Array(xhr.response);
 					const binaryString = bytes.reduce((pre, cur) => pre + String.fromCharCode(cur), "");
 					const base64Data = window.btoa(binaryString);
-					music.src = "data:audio/mp3;base64," + base64Data;
+					music.src = (document.getElementById('form_music') as HTMLInputElement).value = "data:audio/mp3;base64," + base64Data;
 				};
 				xhr.send();
 			}
@@ -238,7 +243,8 @@ const mapStateModule = createSlice({
 		},
 		updateBarPos: (state: IEditorState, action: PayloadAction<number>) => {
 			state.currentTime = action.payload;
-			state.sliderValue.timePosition = 1000 * (action.payload / (document.getElementById('music') as HTMLAudioElement).duration);
+			const music = document.getElementById('music') as HTMLAudioElement;
+			state.sliderValue.timePosition = 1000 * (action.payload / music.duration);
 			const musicBar = new MusicBar(state, state[state.current].bpmChanges);
 			state.barPos = musicBar.currentPosition(action.payload);
 		},
@@ -247,23 +253,27 @@ const mapStateModule = createSlice({
 			const time = musicBar.posToTime(action.payload);
 			state.currentTime = time;
 			state.barPos = action.payload;
-			state.sliderValue.timePosition = 1000 * (time / (document.getElementById('music') as HTMLAudioElement).duration);
-			state.clapIndex = searchClapIndex(state, time);
-			(document.getElementById('music') as HTMLAudioElement).currentTime = time;
+			state.sliderValue.timePosition = 1000 * (time / music.duration);
+			music.currentTime = time;
 		},
 		updateCurrentTime: (state: IEditorState, action: PayloadAction<number>) => {
 			state.currentTime = action.payload;
-			state.sliderValue.timePosition = 1000 * (action.payload / (document.getElementById('music') as HTMLAudioElement).duration);
-			state.clapIndex = searchClapIndex(state, action.payload);
-		},
-		updateClapIndex: (state: IEditorState, action: PayloadAction<number>) => {
-			state.clapIndex = searchClapIndex(state, action.payload, state.clapIndex);
+			state.sliderValue.timePosition = 1000 * (action.payload / music.duration);
 		},
 		changeSliderValue: (state: IEditorState, action: PayloadAction<{slider: Slider, value: number}>) => {
 			state.sliderValue[action.payload.slider] = action.payload.value;
 		},
 		updateInfo: (state: IEditorState, action: PayloadAction<{info: 'title' | 'artist' | 'url', value: string}>) => {
 			state.info[action.payload.info] = action.payload.value;
+		},
+		updateLevel: (state: IEditorState, action: PayloadAction<{difficulty: DifficlutySelect, value: string}>) => {
+			state.info.level[action.payload.difficulty] = action.payload.value;
+		},
+		updateBgColor: (state: IEditorState, action: PayloadAction<{ index: number, color: string }>) => {
+			if (state.info.bgColor.length === 0) {
+				state.info.bgColor = ['#43C6AC', '#191654'];
+			}
+			state.info.bgColor[action.payload.index] = action.payload.color;
 		},
 		setStartTime: (state: IEditorState, action: PayloadAction<{value: number, time: number}>) => {
 			state.startTime = isNaN(action.payload.value) ? 0 : action.payload.value;
@@ -305,7 +315,6 @@ const mapStateModule = createSlice({
 				}
 			}
 			state[state.current].activeTime = searchActiveTime(state[state.current].lines);
-			state.clapIndex = searchClapIndex(state);
 			pushHistory(state[state.current], state[state.current].lines, state.historySize);
 		},
 		copySelect: (state: IEditorState) => {
@@ -447,7 +456,6 @@ const mapStateModule = createSlice({
 				state[state.current].currentSection++;
 			}
 			state[state.current].activeTime = searchActiveTime(state[state.current].lines);
-			state.clapIndex = searchClapIndex(state);
 			pushHistory(state[state.current], state[state.current].lines, historySize);
 		},
 		removeSection: (state: IEditorState, action: PayloadAction<number[][]>) => {
@@ -455,7 +463,6 @@ const mapStateModule = createSlice({
 			removeSection(state[state.current], action.payload);
 			state[state.current].sectionLength--;
 			state[state.current].activeTime = searchActiveTime(state[state.current].lines);
-			state.clapIndex = searchClapIndex(state);
 			pushHistory(state[state.current], state[state.current].lines, state.historySize);
 		},
 		addHistory: (state: IEditorState) => {
@@ -463,9 +470,6 @@ const mapStateModule = createSlice({
 		},
 		changeSnap: (state: IEditorState) => {
 			changeWholeBeatSnap(state[state.current]);
-		},
-		setupBpm: (state: IEditorState, action: PayloadAction<number>) => {
-			state[state.current].bpm = action.payload;
 		},
 		moveSection: (state: IEditorState, action: PayloadAction<number>) => {
 			state[state.current].currentSection = action.payload;
@@ -475,7 +479,35 @@ const mapStateModule = createSlice({
 			state.selector = {baseX: 0, baseY: 0, x: 0, y: 0, width: 0, height: 0};
 		},
 		changeDifficulty: (state: IEditorState, action: PayloadAction<DifficlutySelect>) => {
-			state[state.current] = state[action.payload];
+			state.current = action.payload;
+		},
+		cloneDifficulty: (state: IEditorState, action: PayloadAction<{origin: DifficlutySelect, target: DifficlutySelect}>) => {
+			const origin = cloneDeep(state[action.payload.origin]);
+			const target = state[action.payload.target];
+			target.snap24 = origin.snap24;
+			target.sectionLength = origin.sectionLength;
+			target.lines = origin.lines;
+			target.bpmChanges = origin.bpmChanges;
+			target.activeTime = origin.activeTime;
+			pushHistory(target, target.lines, state.historySize);
+		},
+		deleteMap: (state: IEditorState, action: PayloadAction<DifficlutySelect>) => {
+			const bpm = state[action.payload].lines[0].bpm;
+			const lines = getInitialLines(bpm, state.notesDisplay.sectionLineCount);
+			state[action.payload].snap24 = false;
+			state[action.payload].currentSection = 0;
+			state[action.payload].sectionLength = 1;
+			state[action.payload].lines = lines;
+			state[action.payload].bpmChanges = [{ bpm: bpm, time: 0 }];
+			state[action.payload].activeTime = [];
+			if (state.current === action.payload) {
+				const musicBar = new MusicBar(state, state[action.payload].bpmChanges);
+				state.currentTime = 0;
+				state.barPos = musicBar.currentPosition(0);
+				state.sliderValue.timePosition = 0;
+				music.currentTime = 0;
+			}
+			pushHistory(state[action.payload], lines, state.historySize);
 		},
 		undo: (state: IEditorState) => {
 			state[state.current].historyIndex--;
@@ -485,7 +517,6 @@ const mapStateModule = createSlice({
 			state[state.current].lines = state[state.current].linesHistory[state[state.current].historyIndex];
 			state[state.current].sectionLength = assignSection(state[state.current].lines, state.notesDisplay.sectionLineCount).length;
 			state[state.current].activeTime = searchActiveTime(state[state.current].lines);
-			state.clapIndex = searchClapIndex(state);
 			adjustCurrentSection(state, 0);
 		},
 		redo: (state: IEditorState) => {
@@ -496,7 +527,6 @@ const mapStateModule = createSlice({
 			state[state.current].lines = state[state.current].linesHistory[state[state.current].historyIndex];
 			state[state.current].sectionLength = assignSection(state[state.current].lines, state.notesDisplay.sectionLineCount).length;
 			state[state.current].activeTime = searchActiveTime(state[state.current].lines);
-			state.clapIndex = searchClapIndex(state);
 			adjustCurrentSection(state, 0);
 		},
 	}
@@ -558,6 +588,21 @@ function changeBeatSnap(mapState: IMapState, startIndex: number) {
 	return index;
 }
 
+function getInitialLines(bpm: number, sectionLineCount: number) {
+	const initialNotesStatus = [...Array(4)].map(() => NotesStatus.NONE);
+	return [...Array(sectionLineCount)].map((value, index) => {
+		return {
+			status: [...initialNotesStatus],
+			snap24: false,
+			inBind: false,
+			bpm: bpm,
+			speed: 1.0,
+			barLine: index === 0,
+			barLineState: true,
+		} as INotesLineState;
+	});
+}
+
 export function getLineIndexesInSection(sectionIndex: number, sections: number[][][]) {
 	const halfBeats = sections[sectionIndex];
 	const first = halfBeats[0][0];
@@ -605,19 +650,6 @@ function removeSection(state: IMapState, halfBeats: number[][]) {
 		});
 	}
 	state.lines = state.lines.filter((value, index) => index < startIndex || endIndex < index);
-}
-
-function searchClapIndex(state: IEditorState, time?: number, index: number = 0): number | undefined {
-	if (!time) {
-		time = state.currentTime - state.startTime / 1000;
-	}
-	if (state[state.current].activeTime.length === 0 || state[state.current].activeTime.length <= index) {
-		return undefined;
-	} else if (time <= state[state.current].activeTime[0].time) {
-		return 0;
-	} else {
-		return state[state.current].activeTime[index].time < time && time < state[state.current].activeTime[index + 1].time ? index + 1 : searchClapIndex(state, time, index + 1);
-	}
 }
 
 export function searchActiveTime(lines: INotesLineState[]) {
@@ -722,7 +754,6 @@ function updateNotesOption(lineIndex: number, target: NotesOption, update: numbe
 			if (target === 'bpm') {
 				state[state.current].bpmChanges = getBpmChanges(state[state.current].lines);
 				state[state.current].activeTime = searchActiveTime(state[state.current].lines);
-				state.clapIndex = searchClapIndex(state);
 			}
 		}
 	}

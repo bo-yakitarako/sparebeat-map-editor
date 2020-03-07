@@ -6,7 +6,7 @@ import { IconNames } from '@blueprintjs/icons';
 import Notes, { NotesStatus } from '../map/Notes';
 import mapStateModule from '../../modules/editorModule';
 import editorModule, { EditMode, NotesMode, Slider as SliderType } from '../../modules/editorModule';
-import { clapActiveTime, stopClap } from '../../modules/music/clapModule';
+import { playMusic, clapActiveTime, stopMusic, changeClapVolume } from '../../modules/music/clapModule';
 
 const controllerStyle: React.CSSProperties = {
 	display: "inline-flex",
@@ -60,7 +60,7 @@ const Controller = () => {
 	const pause = () => {
 		music.pause();
 		music.currentTime = currentTime;
-		stopClap();
+		stopMusic();
 		dispatch(editorModule.actions.pause());
 	};
 
@@ -98,7 +98,7 @@ const Controller = () => {
 				<Button disabled={!loaded} icon={!playing ? IconNames.PLAY : IconNames.PAUSE} onClick={() => {
 					if (!playing) {
 						dispatch(editorModule.actions.play());
-						music.play();
+						playMusic(currentTime);
 						clapActiveTime(activeTime, currentTime, startTime, sliderValue.playbackRate, sliderValue.clapVolume);
 					} else {
 						pause();
@@ -112,9 +112,11 @@ const Controller = () => {
 				}} />
 			</ButtonGroup>
 			<br />
+			<Divider />
 			<div>再生位置</div>
 			<Slider disabled={!loaded} max={1000} labelRenderer={false} value={sliderValue.timePosition} />
 			<br />
+			<Divider />
 			<div>再生速度</div>
 			<Slider min={1} max={100} intent="success" labelRenderer={false} value={sliderValue.playbackRate} onChange={changeSliderValue('playbackRate')} onRelease={(value: number) => {
 					music.playbackRate = value / 100;
@@ -122,6 +124,7 @@ const Controller = () => {
 				 }
 			} />
 			<br />
+			<Divider />
 			<div>楽曲音量</div>
 			<Slider max={100} intent="warning" labelRenderer={false} value={sliderValue.musicVolume} onChange={changeSliderValue('musicVolume')} onRelease={
 				(value: number) => { music.volume = value / 100 }
@@ -129,7 +132,7 @@ const Controller = () => {
 			<br />
 			<Divider />
 			<div>タップ音量</div>
-			<Slider max={100} intent="warning" labelRenderer={false} value={sliderValue.clapVolume} onChange={changeSliderValue('clapVolume')} />
+			<Slider max={100} intent="warning" labelRenderer={false} value={sliderValue.clapVolume} onChange={changeSliderValue('clapVolume')} onRelease={changeClapVolume} />
 			<br />
 		</Card>
 	);

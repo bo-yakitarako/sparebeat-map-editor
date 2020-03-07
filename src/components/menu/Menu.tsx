@@ -1,22 +1,85 @@
 import React, { useState } from 'react';
 import { useSelector, useDispatch } from "react-redux";
 import { AppState } from '../../store';
-import { Button, Navbar, NavbarDivider, NavbarGroup, NavbarHeading, Tooltip, Alignment, Classes, Toaster, Position, Intent, Dialog, InputGroup } from '@blueprintjs/core';
+import { Button, Navbar, NavbarDivider, NavbarGroup, NavbarHeading, Tooltip, Alignment, Classes, Toaster, Position, Intent, Dialog, InputGroup, MenuItem } from '@blueprintjs/core';
 import { IconNames } from '@blueprintjs/icons';
-import editorModule from '../../modules/editorModule';
+import { Select, ItemRenderer } from '@blueprintjs/select';
+import editorModule, { DifficlutySelect } from '../../modules/editorModule';
+import { stopMusic } from '../../modules/music/clapModule';
 import SparebeatJsonExport from '../../modules/mapConvert/SparebeatJsonExport';
+import Picker from './BackgroundColorPicker';
 
-const saveToast = Toaster.create({
+const menuToast = Toaster.create({
 	position: Position.TOP,
 	maxToasts: 1,
 });
 
+interface ICloneSelect {
+	index: number;
+	difficulty: DifficlutySelect;
+}
+const cloneSelects: ICloneSelect[] = ['easy', 'normal', 'hard'].map((value, index) => ({ index: index, difficulty: value as DifficlutySelect }));
+const CloneSelect = Select.ofType<ICloneSelect>();
+
+interface ICloneSelector {
+	me: DifficlutySelect;
+	opponent: DifficlutySelect;
+};
+
+const music = document.querySelector('#music') as HTMLAudioElement;
 const Menu = () => {
 	const dispatch = useDispatch();
 	const [ infoDialog, infoDialogOpen ] = useState(false);
-	const { themeDark, loaded } = useSelector((state: AppState) => state);
-	const { title, artist, url } = useSelector((state: AppState) => state.info);
+	const [ diffDialog, diffDialogOpen ] = useState(false);
+	const [ originSelect, changeOrigin ] = useState('easy' as DifficlutySelect);
+	const [ targetSelect, changeTarget ] = useState('normal' as DifficlutySelect);
+	const [ backDialog, backDialogOpen ] = useState(false);
+	const state = useSelector((state: AppState) => state);
+	const { themeDark, loaded, playing, current } = useSelector((state: AppState) => state);
+	const { title, artist, url, level } = useSelector((state: AppState) => state.info);
 	const mapJson = useSelector((state: AppState) => new SparebeatJsonExport(state).export());
+	const dialogFooter = (opener: React.Dispatch<React.SetStateAction<boolean>>) => (
+		<div className={Classes.DIALOG_FOOTER} style={{ textAlign: 'right' }} >
+			<Button text="閉じる" onClick={() => opener(false)} />
+		</div>
+	);
+	const diffWindow = (difficulty: DifficlutySelect) => (
+		<div style={{ display: 'inline-block', width: '25%', margin: `0 ${difficulty === 'normal' ? '5%' : '0'}`, }}>
+			<Button active={ current === difficulty } text={difficulty.toUpperCase()} style={{width: '100%'}} onClick={() => {
+				if (current !== difficulty) {
+					dispatch(editorModule.actions.changeDifficulty(difficulty));
+					dispatch(editorModule.actions.updateCurrentTime(0));
+					dispatch(editorModule.actions.updateBarPos(0));
+				}
+			}} />
+			<InputGroup style={{ textAlign: 'center' }} value={level[difficulty].toString()} onChange={(event: React.FormEvent<HTMLInputElement>) => {
+				dispatch(editorModule.actions.updateLevel({ difficulty: difficulty, value: event.currentTarget.value }));
+			}} />
+			<Button intent={Intent.DANGER} text="リセット" style={{ width: '100%', marginTop: '10%' }} onClick={() => { dispatch(editorModule.actions.deleteMap(difficulty)) }} />
+		</div>
+	);
+	const CloneSelector: React.SFC<ICloneSelector> = (props: ICloneSelector) => {
+		const renderItem: ItemRenderer<ICloneSelect> = (select, { handleClick, modifiers }) => {
+			return <MenuItem key={select.index} active={props.me === select.difficulty} disabled={props.opponent === select.difficulty} text={select.difficulty.toUpperCase()} onClick={handleClick} />
+		};
+		const handleClick = (select: ICloneSelect) => {
+			if (props.me === originSelect) {
+				changeOrigin(select.difficulty);
+			} else {
+				changeTarget(select.difficulty);
+			}
+		};
+		return (
+			<CloneSelect
+				items={cloneSelects}
+				itemRenderer={renderItem}
+				onItemSelect={handleClick}
+				filterable={false}
+			>
+				<Button text={props.me.toUpperCase()} />
+			</CloneSelect>
+		);
+	};
 	return (
 		<Navbar style={{height: '50px'}}>
 			<Dialog className={themeDark ? Classes.DARK : ''} isOpen={infoDialog} title="曲情報の編集" onClose={() => { infoDialogOpen(false) }}>
@@ -31,26 +94,53 @@ const Menu = () => {
 						dispatch(editorModule.actions.updateInfo({info: 'url', value: event.currentTarget.value}));
 					}} />
 				</div>
-				<div className={Classes.DIALOG_FOOTER} style={{textAlign: 'right'}} >
-					<Button text="閉じる" onClick={() => infoDialogOpen(false)} />
+				{dialogFooter(infoDialogOpen)}
+			</Dialog>
+			<Dialog className={themeDark ? Classes.DARK : ''} isOpen={diffDialog} title="難易度変更" onClose={() => { diffDialogOpen(false) }}>
+				<div className={ Classes.DIALOG_BODY } style={{ textAlign: 'center' }}>
+					<div style={{ marginBottom: '10%' }} >
+						{diffWindow('easy')}
+						{diffWindow('normal')}
+						{diffWindow('hard')}
+					</div>
+					<div>
+						<CloneSelector me={originSelect} opponent={targetSelect} />
+						譜面から
+						<CloneSelector me={targetSelect} opponent={originSelect} />
+						譜面へ
+						<Button text="コピー" onClick={() => { dispatch(editorModule.actions.cloneDifficulty({ origin: originSelect, target: targetSelect })) }} />
+					</div>
 				</div>
+				{dialogFooter(diffDialogOpen)}
+			</Dialog>
+			<Dialog className={themeDark ? Classes.DARK : ''} style={{ width: 600 }} isOpen={backDialog} title="背景色設定" onClose={() => { backDialogOpen(false) }}>
+				<Picker />
 			</Dialog>
 			<NavbarGroup align={Alignment.LEFT}>
 				<NavbarHeading>Sparebeat Map Editor</NavbarHeading>
 				<NavbarDivider />
-				<Tooltip content="曲情報編集">
-					<Button disabled={!loaded} className={Classes.MINIMAL} icon={IconNames.INFO_SIGN} large={true} onClick={() => infoDialogOpen(true)} />
+				<Tooltip content="曲情報の編集">
+					<Button disabled={!loaded} className={Classes.MINIMAL} icon={IconNames.INFO_SIGN} large={true} onClick={() => infoDialogOpen(true) } />
 				</Tooltip>
 				<Tooltip content="難易度変更">
-					<Button disabled={!loaded} className={Classes.MINIMAL} icon={IconNames.MULTI_SELECT} large={true} />
+					<Button disabled={!loaded} className={Classes.MINIMAL} icon={IconNames.MULTI_SELECT} large={true} onClick={() => {
+						diffDialogOpen(true);
+						if (playing) {
+							music.pause();
+							stopMusic();
+							dispatch(editorModule.actions.pause());
+						}
+					}} />
 				</Tooltip>
 				<Tooltip content="背景色設定">
-					<Button disabled={!loaded} className={Classes.MINIMAL} icon={IconNames.STYLE} large={true} onClick={() => {
-					}} />
+					<Button disabled={!loaded} className={Classes.MINIMAL} icon={IconNames.STYLE} large={true} onClick={() => backDialogOpen(true) } />
 				</Tooltip>
 				<NavbarDivider />
 				<Tooltip content="テストプレイ">
-					<Button disabled={!loaded} className={Classes.MINIMAL} icon={IconNames.DESKTOP} large={true} onClick={() => {
+					<Button disabled={!loaded} className={Classes.MINIMAL} icon={IconNames.DESKTOP} large={true} form="testplay_form" onClick={() => {
+						(document.getElementById('form_map') as HTMLInputElement).value = JSON.stringify(new SparebeatJsonExport(state).export());
+						const testplayForm = document.getElementById('testplay_form') as HTMLFormElement;
+						testplayForm.submit();
 					}} />
 				</Tooltip>
 				<Tooltip content="譜面ファイルをクリップボードにコピー、一時保存">
@@ -59,7 +149,7 @@ const Menu = () => {
 						const listener = (e: ClipboardEvent) => {
 							if (e.clipboardData) {
 								e.clipboardData.setData("text/plain", JSON.stringify(mapJson, null, '\t'));
-								saveToast.show({message: 'クリップボードにコピーしました', intent: Intent.PRIMARY, timeout: 2000});
+								menuToast.show({message: 'クリップボードにコピーしました', intent: Intent.PRIMARY, timeout: 2000});
 							}
 							e.preventDefault();
 							document.removeEventListener("copy", listener);

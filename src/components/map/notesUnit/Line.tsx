@@ -29,7 +29,6 @@ const Line: React.SFC<ILine> = (props: ILine) => {
 	const location = (props.snap24 ? 1 : 1.5) * props.innerBeatIndex * height * intervalRatio;
 	const bpmChanging = props.lineIndex === 0 || currentLine.bpm !== lines[props.lineIndex - 1].bpm;
 	const speedChanging = props.lineIndex > 0 && currentLine.speed !== lines[props.lineIndex - 1].speed;
-	const isBarLine = currentLine.barLineState && currentLine.barLine;
 	const optionStyle = editMode === 'add' ? (themeDark ? 'notesOptionDark' : 'notesOption') : '';
 	const selected = (laneIndex: number) => select.reduce((pre, cur) => {
 		const inSelect = cur.lane.start <= laneIndex && laneIndex <= cur.lane.end && cur.line.start <= props.lineIndex && props.lineIndex <= cur.line.end;
@@ -51,7 +50,7 @@ const Line: React.SFC<ILine> = (props: ILine) => {
 		top: `calc(50% - 1px)`,
 		width: `100%`,
 		height: '2px',
-		backgroundColor: themeDark ? '#BFCCD6' : '#5C7080',
+		backgroundColor: themeDark ? (currentLine.barLineState ? '#BFCCD6' : '#5C7080') : (currentLine.barLineState ? '#5C7080' : '#BFCCD6'),
 		zIndex: 2,
 	};
 	const notesOption = (
@@ -74,7 +73,7 @@ const Line: React.SFC<ILine> = (props: ILine) => {
 			<div style={{position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)'}}>
 				{bpmChanging ? currentLine.bpm : speedChanging && currentLine.speed ? `×${currentLine.speed.toFixed(1)}` : ''}
 			</div>
-			{isBarLine ? <div style={barLineStyle}></div> : null}
+			{currentLine.barLine ? <div style={barLineStyle}></div> : null}
 		</div>
 	);
 	const convertNotesStatus = (addNotes: NotesMode) => {

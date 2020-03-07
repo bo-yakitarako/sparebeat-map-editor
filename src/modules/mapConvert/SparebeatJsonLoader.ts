@@ -20,7 +20,6 @@ export default class SparebeatJsonLoader {
 		}
 		const sections = assignSection(lines, this.json.beats !== undefined ? this.json.beats * 4 : 16);
 		return {
-			bpm: lines[0].bpm,
 			snap24: lines[0].snap24,
 			currentSection: 0,
 			sectionLength: sections.length,

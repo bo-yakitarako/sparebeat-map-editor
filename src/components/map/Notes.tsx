@@ -24,12 +24,14 @@ interface INotes {
 };
 
 const notesColors = {
-	default: ['#ce9eff', '#ceceff', '#9eceff', '#9effff', '#ff4e4e']
+	default: ['#ce9eff', '#ceceff', '#9eceff', '#9effff', '#ff4e4e'],
+	sunset: ['#ff9ece', '#ff9e9e', '#ffce9e', '#ffff9e', '#9c4eff'],
+	'39': ['#cecece', '#00cece', '#00cece', '#cecece', '#ff4e9e'],
 }
 
 const NotesComponent: React.SFC<INotes> = (props: INotes) => {
 	const dispatch = useDispatch();
-	const { themeDark, editMode, rangeSelect } = useSelector((state: AppState) => state);;
+	const { themeDark, sparebeatTheme, editMode, rangeSelect } = useSelector((state: AppState) => state);;
 	const height = props.width / (props.aspect ? props.aspect : 2.5);
 	const boxStyle: React.CSSProperties = {
 		position: 'relative',
@@ -57,7 +59,7 @@ const NotesComponent: React.SFC<INotes> = (props: INotes) => {
 		const strokeWidth = props.width / 25;
 		const points: string[] = [`${strokeWidth},${height / 2}`, `${props.width / 2},${strokeWidth}`, `${props.width - strokeWidth},${height / 2}`, `${props.width / 2},${height - strokeWidth}`]
 		const diamondPointsValue = `${points[0]} ${points[1]} ${points[2]} ${points[3]} ${points[0]} ${points[1]}`;
-		const fillColor = props.status === NotesStatus.ATTACK ? notesColors.default[4] : props.status === NotesStatus.NONE ? (themeDark ? "#5C7080" : "#F5F8FA") : notesColors.default[props.index];
+		const fillColor = props.status === NotesStatus.ATTACK ? notesColors[sparebeatTheme][4] : props.status === NotesStatus.NONE ? (themeDark ? "#5C7080" : "#F5F8FA") : notesColors[sparebeatTheme][props.index];
 		const strokeColor = props.selected ? '#2965CC' : props.inBind ? notesColors.default[4] : (themeDark ? "#BFCCD6" : "#5C7080");
 		const click = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
 			if (props.onClick) {
@@ -92,7 +94,7 @@ const NotesComponent: React.SFC<INotes> = (props: INotes) => {
 		if (props.status === NotesStatus.LONG_START || props.status === NotesStatus.LONG_END) {
 			const lnTokenStyle: React.CSSProperties = {
 				position: 'absolute',
-				color: notesColors.default[4],
+				color: notesColors[sparebeatTheme][4],
 				fontSize: `${props.width / 3.2}px`,
 				left: '50%',
 				transform: 'translateX(-50%)',
