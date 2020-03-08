@@ -3,6 +3,7 @@ import { Classes } from '@blueprintjs/core';
 import { useSelector, useDispatch } from "react-redux";
 import { AppState } from '../store';
 import editorModule, { ISelectRange, getLineIndexesInSection, assignSection } from '../modules/editorModule';
+import Start from './Start';
 import Menu from './menu/Menu';
 import Controller from './menu/Controller';
 import Map from './map/Map';
@@ -26,7 +27,6 @@ function App() {
     const { lines, currentSection } = useSelector((state: AppState) => state[state.current]);
     const { column, notesWidth, intervalRatio, aspect, sectionLineCount } = useSelector((state: AppState) => state.notesDisplay);
     const { baseX, baseY, x, y, width, height } = useSelector((state: AppState) => state.selector);
-    dispatch(editorModule.actions.loadMusic());
     const modeSelect = editMode === 'select';
     const notesHeight = notesWidth / aspect;
     const sections = assignSection(lines, sectionLineCount);
@@ -80,32 +80,39 @@ function App() {
         }
     };
     return (
-        <div
-            className={themeDark ? Classes.DARK : ""}
-            style={{
-                width: "100%",
-                minHeight: "100vh",
-                backgroundColor: themeDark ? "#30404D" : "#F5F8FA"
-            }}
-            onMouseDown={e => {
-                if (modeSelect && e.clientX > 200 && e.clientY > 50 && e.button !== 2) {
-                    dispatch(editorModule.actions.adoptSelection([]));
-                    dispatch(editorModule.actions.setSelectorBase({x: e.clientX, y: e.clientY }))
-                }
-            }}
-            onMouseMove={e => {
-                if (baseX !== 0 && baseY !== 0) {
-                    dispatch(editorModule.actions.setSelectorRect({x: e.clientX, y: e.clientY }));
-                }
-            }}
-            onMouseUp={dispatchSelect} onMouseLeave={dispatchSelect}
-        >
-            <Menu/>
-            <div style={editorStyle}>
-                <Controller />
-                <Map />
+        <div className={themeDark ? Classes.DARK : ""}>
+            <div
+                className={themeDark ? Classes.DARK : ""}
+                style={{
+                    position: 'absolute',
+                    left: 0,
+                    top: 0,
+                    width: "100%",
+                    minHeight: "100vh",
+                    backgroundColor: themeDark ? "#30404D" : "#F5F8FA",
+                    zIndex: 5,
+                }}
+                onMouseDown={e => {
+                    if (modeSelect && e.clientX > 200 && e.clientY > 50 && e.button !== 2) {
+                        dispatch(editorModule.actions.adoptSelection([]));
+                        dispatch(editorModule.actions.setSelectorBase({x: e.clientX, y: e.clientY }))
+                    }
+                }}
+                onMouseMove={e => {
+                    if (baseX !== 0 && baseY !== 0) {
+                        dispatch(editorModule.actions.setSelectorRect({x: e.clientX, y: e.clientY }));
+                    }
+                }}
+                onMouseUp={dispatchSelect} onMouseLeave={dispatchSelect}
+            >
+                <Menu/>
+                <div style={editorStyle}>
+                    <Controller />
+                    <Map />
+                </div>
+                <Selector />
             </div>
-            <Selector />
+            <Start />
         </div>
     );
 }

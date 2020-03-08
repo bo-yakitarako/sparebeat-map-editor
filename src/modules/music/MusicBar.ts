@@ -33,7 +33,7 @@ export default class MusicBar {
 		this.bpmChanges = [...bpmChanges];
 	}
 
-	private get sectinHeight() {
+	public get sectinHeight() {
 		return this.lines * 1.5 * this.intervalRatio * this.notesHeight;
 	}
 

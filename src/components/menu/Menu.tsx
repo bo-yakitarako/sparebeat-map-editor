@@ -7,7 +7,8 @@ import { Select, ItemRenderer } from '@blueprintjs/select';
 import editorModule, { DifficlutySelect } from '../../modules/editorModule';
 import { stopMusic } from '../../modules/music/clapModule';
 import SparebeatJsonExport from '../../modules/mapConvert/SparebeatJsonExport';
-import Picker from './BackgroundColorPicker';
+import BackgroundColorPicker from './BackgroundColorPicker';
+import EditorSetting from './EditorSetting';
 
 const menuToast = Toaster.create({
 	position: Position.TOP,
@@ -24,7 +25,7 @@ const CloneSelect = Select.ofType<ICloneSelect>();
 interface ICloneSelector {
 	me: DifficlutySelect;
 	opponent: DifficlutySelect;
-};
+}
 
 const music = document.querySelector('#music') as HTMLAudioElement;
 const Menu = () => {
@@ -34,6 +35,7 @@ const Menu = () => {
 	const [ originSelect, changeOrigin ] = useState('easy' as DifficlutySelect);
 	const [ targetSelect, changeTarget ] = useState('normal' as DifficlutySelect);
 	const [ backDialog, backDialogOpen ] = useState(false);
+	const [ settingDialog, settingOpen ] = useState(false);
 	const state = useSelector((state: AppState) => state);
 	const { themeDark, loaded, playing, current } = useSelector((state: AppState) => state);
 	const { title, artist, url, level } = useSelector((state: AppState) => state.info);
@@ -76,7 +78,7 @@ const Menu = () => {
 				onItemSelect={handleClick}
 				filterable={false}
 			>
-				<Button text={props.me.toUpperCase()} />
+				<Button text={props.me.toUpperCase()} rightIcon={ IconNames.CARET_DOWN } />
 			</CloneSelect>
 		);
 	};
@@ -113,16 +115,22 @@ const Menu = () => {
 				</div>
 				{dialogFooter(diffDialogOpen)}
 			</Dialog>
-			<Dialog className={themeDark ? Classes.DARK : ''} style={{ width: 600 }} isOpen={backDialog} title="背景色設定" onClose={() => { backDialogOpen(false) }}>
-				<Picker />
+			<Dialog className={themeDark ? Classes.DARK + ' dialog' : 'dialog'} style={{ width: 600 }} isOpen={backDialog} title="背景色設定" onClose={() => { backDialogOpen(false) }}>
+				<BackgroundColorPicker />
+			</Dialog>
+			<Dialog className={themeDark ? Classes.DARK + ' dialog' : 'dialog' } isOpen={settingDialog} title="エディタ設定" onClose={() => settingOpen(false) } onClosed={() => {
+				dispatch(editorModule.actions.saveSetting());
+			}} >
+				<EditorSetting />
+				{dialogFooter(settingOpen)}
 			</Dialog>
 			<NavbarGroup align={Alignment.LEFT}>
 				<NavbarHeading>Sparebeat Map Editor</NavbarHeading>
 				<NavbarDivider />
-				<Tooltip content="曲情報の編集">
+				<Tooltip disabled={!loaded} content="曲情報の編集">
 					<Button disabled={!loaded} className={Classes.MINIMAL} icon={IconNames.INFO_SIGN} large={true} onClick={() => infoDialogOpen(true) } />
 				</Tooltip>
-				<Tooltip content="難易度変更">
+				<Tooltip disabled={!loaded} content="難易度変更">
 					<Button disabled={!loaded} className={Classes.MINIMAL} icon={IconNames.MULTI_SELECT} large={true} onClick={() => {
 						diffDialogOpen(true);
 						if (playing) {
@@ -132,24 +140,28 @@ const Menu = () => {
 						}
 					}} />
 				</Tooltip>
-				<Tooltip content="背景色設定">
-					<Button disabled={!loaded} className={Classes.MINIMAL} icon={IconNames.STYLE} large={true} onClick={() => backDialogOpen(true) } />
+				<Tooltip disabled={!loaded} content="背景色設定">
+					<Button disabled={!loaded} className={Classes.MINIMAL} icon={IconNames.STYLE} large={true} onClick={() => { backDialogOpen(true) }} />
 				</Tooltip>
 				<NavbarDivider />
-				<Tooltip content="テストプレイ">
+				<Tooltip disabled={!loaded} content="テストプレイ">
 					<Button disabled={!loaded} className={Classes.MINIMAL} icon={IconNames.DESKTOP} large={true} form="testplay_form" onClick={() => {
 						(document.getElementById('form_map') as HTMLInputElement).value = JSON.stringify(new SparebeatJsonExport(state).export());
 						const testplayForm = document.getElementById('testplay_form') as HTMLFormElement;
 						testplayForm.submit();
+						if ((document.getElementById('form_music') as HTMLInputElement).value !== '') {
+							(document.getElementById('form_music') as HTMLInputElement).value = '';
+						}
+						(document.getElementById('form_map') as HTMLInputElement).value = '';
 					}} />
 				</Tooltip>
-				<Tooltip content="譜面ファイルをクリップボードにコピー、一時保存">
+				<Tooltip disabled={!loaded} content="譜面ファイルをクリップボードにコピー、サイトに保存">
 					<Button disabled={!loaded} className={Classes.MINIMAL} icon={IconNames.SAVED} large={true} onClick={() => {
 						localStorage.map = JSON.stringify(mapJson);
 						const listener = (e: ClipboardEvent) => {
 							if (e.clipboardData) {
 								e.clipboardData.setData("text/plain", JSON.stringify(mapJson, null, '\t'));
-								menuToast.show({message: 'クリップボードにコピーしました', intent: Intent.PRIMARY, timeout: 2000});
+								menuToast.show({message: 'クリップボードにコピー、保存しました', intent: Intent.PRIMARY, timeout: 2000});
 							}
 							e.preventDefault();
 							document.removeEventListener("copy", listener);
@@ -158,7 +170,7 @@ const Menu = () => {
 						document.execCommand("copy");
 					}} />
 				</Tooltip>
-				<Tooltip content="譜面出力">
+				<Tooltip disabled={!loaded} content="譜面出力">
 					<Button disabled={!loaded} className={Classes.MINIMAL} icon={IconNames.EXPORT} large={true} onClick={() => {
 						const downLoadLink = document.createElement('a');
 						downLoadLink.download = 'map.json';
@@ -169,10 +181,12 @@ const Menu = () => {
 				</Tooltip>
 				<NavbarDivider />
 				<Tooltip content="エディタ設定">
-					<Button className={Classes.MINIMAL} icon={IconNames.COG} large={true} />
+					<Button className={Classes.MINIMAL} icon={IconNames.COG} large={true} onClick={() => { settingOpen(true) }} />
 				</Tooltip>
 				<Tooltip content="ヘルプ">
-					<Button className={Classes.MINIMAL} icon={IconNames.HELP} large={true} />
+					<Button className={Classes.MINIMAL} icon={IconNames.HELP} large={true} onClick={() => {
+						menuToast.show({ message: 'もうちょい待って><', intent: Intent.WARNING, timeout: 2000 });
+					}} />
 				</Tooltip>
 			</NavbarGroup>
 		</Navbar>

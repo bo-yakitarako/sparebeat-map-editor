@@ -97,7 +97,8 @@ const NotesComponent: React.SFC<INotes> = (props: INotes) => {
 				color: notesColors[sparebeatTheme][4],
 				fontSize: `${props.width / 3.2}px`,
 				left: '50%',
-				transform: 'translateX(-50%)',
+				top: '50%',
+				transform: 'translate(-50%, -50%)',
 				zIndex: 2
 			};
 			const tokenText = props.status === NotesStatus.LONG_START ? 'S' : 'E';

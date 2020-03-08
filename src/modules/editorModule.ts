@@ -3,8 +3,7 @@ import { cloneDeep } from 'lodash';
 import MusicBar, { SectionPos } from './music/MusicBar';
 import { NotesStatus } from '../components/map/Notes';
 import { IChangeNotesStatus } from '../components/map/notesUnit/Line';
-import SparebeatJsonLoader from './mapConvert/SparebeatJsonLoader';
-import testJson from './mapConvert/testJson';
+import ISparebeatJson from './mapConvert/ISparebeatJson';
 
 export type NotesOption = 'inBind' | 'bpm' | 'speed' | 'barLine' | 'barLineState';
 export interface INotesLineState {
@@ -47,12 +46,35 @@ export interface ICopyObject {
 	}[];
 }
 
+interface ISaveSetting {
+	general: {
+		notesWidth: number;
+		aspect: number;
+		column: number;
+		intervalRatio: number;
+		barWidth: number;
+		historySize: number;
+	};
+	color: {
+		themeDark: boolean;
+		sparebeatTheme: SparebeatTheme;
+		barColor: string;
+	}
+};
+
+interface ISaveVolume {
+	musicVolume: number;
+	clapVolume: number;
+}
+
 export type DifficlutySelect = 'easy' | 'normal' | 'hard';
 export type SparebeatTheme = 'default' | 'sunset' | '39';
+export type NotesDisplay = 'notesWidth' | 'column' | 'intervalRatio' | 'aspect';
 export type EditMode = 'add' | 'select' | 'music';
 export type NotesMode = 'normal' | 'attack' | 'longStart' | 'longEnd';
 export type Slider = 'timePosition' | 'playbackRate' | 'musicVolume' | 'clapVolume';
 export interface IEditorState {
+	startPosition: number;
 	themeDark: boolean;
 	sparebeatTheme: SparebeatTheme;
 	loaded: boolean;
@@ -66,6 +88,7 @@ export interface IEditorState {
 		aspect: number;
 	};
 	barWidth: number;
+	barColor: string;
 	barPos: SectionPos;
 	playing: boolean;
 	sliderValue: {
@@ -114,38 +137,45 @@ export interface IEditorState {
 }
 
 const initialSectionCount = 16;
-const loader = new SparebeatJsonLoader(testJson);
-const { title, beats, startTime, level, artist, url, bgColor } = loader.info;
+const setting = localStorage.setting ? JSON.parse(localStorage.setting) as ISaveSetting : undefined;
+const volume = localStorage.volume ? JSON.parse(localStorage.volume) as ISaveVolume : undefined;
 
-// const initialMapState: IMapState = { bpm: initialBpm, snap24: false, currentSection: 0, sectionLength: 4, lines: [], linesHistory: [], historyIndex: 0, bpmChanges: [], activeTime: [] };
-// for (let i = 0; i < 4 * initialSectionCount; i++) {
-// 	const lineState: INotesLineState = { status: [...initialNotesStatus], inBind: false, snap24: false, bpm: initialBpm, barLine: i % initialSectionCount === 0, speed: 1.0, barLineState: true };
-// 	initialMapState.lines.push(lineState);
-// }
-// initialMapState.linesHistory.push(initialMapState.lines);
-// initialMapState.bpmChanges = getBpmChanges(initialMapState.lines);
+const initialBpm = 150;
+const initialNotesStatus = [...Array(4)].map(() => NotesStatus.NONE);
+const initialMapState: IMapState = { snap24: false, currentSection: 0, sectionLength: 1, lines: [], linesHistory: [], historyIndex: 0, bpmChanges: [], activeTime: [] };
+for (let i = 0; i < initialSectionCount; i++) {
+	const lineState: INotesLineState = { status: [...initialNotesStatus], inBind: false, snap24: false, bpm: initialBpm, barLine: i % initialSectionCount === 0, speed: 1.0, barLineState: true };
+	initialMapState.lines.push(lineState);
+}
+initialMapState.linesHistory.push(initialMapState.lines);
+initialMapState.bpmChanges = [{ bpm: initialBpm, time: 0 }];
 
+const notesWidth = setting ? setting.general.notesWidth : 50;
+const aspect = setting ? setting.general.aspect : 2.5;
+const barWidth = setting ? setting.general.barWidth : 4;
 const initialState: IEditorState = {
-	themeDark: true,
-	sparebeatTheme: 'sunset',
+	startPosition: 0,
+	themeDark: setting ? setting.color.themeDark : false,
+	sparebeatTheme: setting ? setting.color.sparebeatTheme : 'default',
 	loaded: false,
 	editMode: 'add',
 	notesMode: 'normal',
 	notesDisplay: {
-		notesWidth: 48,
-		sectionLineCount: beats !== undefined ? beats * 4 : initialSectionCount,
-		column: 4,
-		intervalRatio: 1.0,
-		aspect: 2.5,
+		notesWidth: setting ? setting.general.notesWidth : 50,
+		sectionLineCount: initialSectionCount,
+		column: setting ? setting.general.column : 4,
+		intervalRatio: setting ? setting.general.intervalRatio : 1.0,
+		aspect: setting ? setting.general.aspect : 2.5,
 	},
-	barWidth: 4,
-	barPos: { section: 0, pos: 24 / 2.5 - 2 },
+	barWidth: setting ? setting.general.barWidth : 4,
+	barColor: setting ? setting.color.barColor : '#cece9e',
+	barPos: { section: 0, pos: (notesWidth / 2) / aspect - barWidth / 2 },
 	playing: false,
 	sliderValue: {
 		timePosition: 0,
 		playbackRate: 100,
-		musicVolume: 100,
-		clapVolume: 100,
+		musicVolume: volume ? volume.musicVolume : 100,
+		clapVolume: volume ? volume.clapVolume : 100,
 	},
 	temporaryNotesOption: {
 		inBind: false,
@@ -161,23 +191,23 @@ const initialState: IEditorState = {
 		select: [], copy: [],
 	},
 	info: {
-		title: title !== undefined ? title : '',
-		artist: artist !== undefined ? artist : '',
-		url: url !== undefined ? url : '',
+		title: '',
+		artist: '',
+		url: '',
 		level: {
-			easy: level.easy.toString(),
-			normal: level.normal.toString(),
-			hard: level.hard.toString(),
+			easy: '',
+			normal: '',
+			hard: '',
 		},
-		bgColor: bgColor !== undefined ? bgColor : [],
+		bgColor: [],
 	},
-	startTime: startTime,
+	startTime: 0,
 	currentTime: 0.0,
 	current: 'hard',
-	easy: loader.getMapState('easy') as IMapState,
-	normal: loader.getMapState('normal') as IMapState,
-	hard: loader.getMapState('hard') as IMapState,
-	historySize: 50,
+	easy: initialMapState,
+	normal: cloneDeep(initialMapState),
+	hard: cloneDeep(initialMapState),
+	historySize: setting ? setting.general.historySize : 50,
 };
 
 const pushHistory = (state: IMapState, notesLineState: INotesLineState[], historySize: number): void => {
@@ -210,23 +240,77 @@ const mapStateModule = createSlice({
 		changeSparebeatTheme: (state: IEditorState, action: PayloadAction<SparebeatTheme>) => {
 			state.sparebeatTheme = action.payload;
 		},
+		changeBarColor: (state: IEditorState, action: PayloadAction<string>) => {
+			state.barColor = action.payload;
+		},
+		changeNotesDisplay: (state: IEditorState, action: PayloadAction<{ setting: NotesDisplay, value: number }>) => {
+			state.notesDisplay[action.payload.setting] = action.payload.value;
+		},
+		changeBarWidth: (state: IEditorState, action: PayloadAction<number>) => {
+			state.barWidth = action.payload;
+		},
+		changeHistorySize: (state: IEditorState, action: PayloadAction<number>) => {
+			state.historySize = action.payload;
+			(['easy', 'normal', 'hard'] as DifficlutySelect[]).forEach((diff) => {
+				if (state[diff].linesHistory.length > state.historySize) {
+					state[diff].linesHistory = state[diff].linesHistory.slice(state[diff].linesHistory.length - state.historySize);
+					if (state[diff].historyIndex >= state[diff].linesHistory.length) {
+						state[diff].historyIndex = state[diff].linesHistory.length - 1;
+					}
+				}
+			});
+		},
+		saveSetting: (state: IEditorState) => {
+			const { themeDark, sparebeatTheme, notesDisplay: { notesWidth, aspect, column, intervalRatio }, barColor, barWidth, historySize } = state;
+			const setting: ISaveSetting = {
+				general: {
+					notesWidth, aspect, column, intervalRatio, barWidth, historySize
+				},
+				color: {
+					themeDark, sparebeatTheme, barColor
+				},
+			};
+			localStorage.setting = JSON.stringify(setting);
+		},
 		load: (state: IEditorState) => {
 			state.loaded = true;
 		},
-		loadMusic: (state: IEditorState) => {
-			const music = (document.querySelector('#music') as HTMLAudioElement);
-			if (music.src === '') {
-				const xhr = new XMLHttpRequest();
-				xhr.open('GET', 'media/Grievous_Lady.mp3', true);
-				xhr.responseType = 'arraybuffer';
-				xhr.onload = () => {
-					const bytes = new Uint8Array(xhr.response);
-					const binaryString = bytes.reduce((pre, cur) => pre + String.fromCharCode(cur), "");
-					const base64Data = window.btoa(binaryString);
-					music.src = (document.getElementById('form_music') as HTMLInputElement).value = "data:audio/mp3;base64," + base64Data;
-				};
-				xhr.send();
-			}
+		fadeStart: (state: IEditorState) => {
+			state.startPosition++;
+		},
+		setSongInfo: (state: IEditorState, action: PayloadAction<ISparebeatJson>) => {
+			const { title, beats, startTime, level, artist, url, bgColor } = action.payload;
+			state.info.title = title !== undefined ? title : '';
+			state.info.artist = artist !== undefined ? artist : '';
+			state.info.url = url !== undefined ? url : '';
+			state.info.level = {
+				easy: level.easy.toString(),
+				normal: level.normal.toString(),
+				hard: level.hard.toString(),
+			};
+			state.info.bgColor = bgColor !== undefined ? bgColor : [];
+			state.notesDisplay.sectionLineCount = 4 * (beats ? beats : 4);
+			state.startTime = startTime;
+		},
+		setMap: (state: IEditorState, action: PayloadAction<{ diff: DifficlutySelect, map: IMapState }>) => {
+			state[action.payload.diff] = action.payload.map;
+		},
+		initializeMap: (state: IEditorState, action: PayloadAction<{ bpm: number, beats: number }>) => {
+			state.notesDisplay.sectionLineCount = action.payload.beats * 4;
+			const lines = getInitialLines(action.payload.bpm, state.notesDisplay.sectionLineCount);
+			const mapState: IMapState = {
+				snap24: false,
+				currentSection: 0,
+				sectionLength: 1,
+				lines: lines,
+				linesHistory: [lines],
+				historyIndex: 0,
+				bpmChanges: [{ bpm: action.payload.bpm, time: 0 }],
+				activeTime: [],
+			};
+			state.easy = mapState;
+			state.normal = cloneDeep(mapState);
+			state.hard = cloneDeep(mapState);
 		},
 		changeEditMode: (state: IEditorState, action: PayloadAction<EditMode>) => {
 			state.rangeSelect.select = [];
@@ -243,25 +327,47 @@ const mapStateModule = createSlice({
 		},
 		updateBarPos: (state: IEditorState, action: PayloadAction<number>) => {
 			state.currentTime = action.payload;
-			const music = document.getElementById('music') as HTMLAudioElement;
-			state.sliderValue.timePosition = 1000 * (action.payload / music.duration);
+			state.sliderValue.timePosition = 1000 * (state.currentTime / music.duration);
 			const musicBar = new MusicBar(state, state[state.current].bpmChanges);
-			state.barPos = musicBar.currentPosition(action.payload);
+			state.barPos = musicBar.currentPosition(state.currentTime);
 		},
 		moveBarPos: (state: IEditorState, action: PayloadAction<SectionPos>) => {
 			const musicBar = new MusicBar(state, state[state.current].bpmChanges);
 			const time = musicBar.posToTime(action.payload);
-			state.currentTime = time;
+			state.currentTime = music.currentTime = time;
 			state.barPos = action.payload;
 			state.sliderValue.timePosition = 1000 * (time / music.duration);
-			music.currentTime = time;
 		},
 		updateCurrentTime: (state: IEditorState, action: PayloadAction<number>) => {
 			state.currentTime = action.payload;
 			state.sliderValue.timePosition = 1000 * (action.payload / music.duration);
 		},
+		moveCurrentTimeOnSlider: (state: IEditorState, action: PayloadAction<number>) => {
+			const time = (action.payload / 1000) * music.duration;
+			const { bpmChanges, sectionLength } = state[state.current];
+			const musicBar = new MusicBar(state, bpmChanges);
+			const barPos = musicBar.currentPosition(time);
+			const column = state.notesDisplay.column;
+			if (barPos.section < sectionLength) {
+				state[state.current].currentSection = sectionLength - column < 0 ? 0 : barPos.section > sectionLength - column ? sectionLength - column : barPos.section;
+				state.barPos = barPos;
+				music.currentTime = state.currentTime = time;
+				state.sliderValue.timePosition = action.payload;
+			} else {
+				const correctSection = sectionLength - 1;
+				state[state.current].currentSection = sectionLength - column < 0 ? 0 : correctSection > sectionLength - column ? sectionLength - column : correctSection;
+				state.barPos = { section: correctSection, pos: musicBar.sectinHeight - state.barWidth };
+				const correctTime = musicBar.posToTime(state.barPos);
+				music.currentTime = state.currentTime = correctTime;
+				state.sliderValue.timePosition = 1000 * (correctTime / music.duration);
+			}
+		},
 		changeSliderValue: (state: IEditorState, action: PayloadAction<{slider: Slider, value: number}>) => {
 			state.sliderValue[action.payload.slider] = action.payload.value;
+			if (action.payload.slider === 'musicVolume' || action.payload.slider === 'clapVolume') {
+				const volume: ISaveVolume = { musicVolume: state.sliderValue.musicVolume, clapVolume: state.sliderValue.clapVolume };
+				localStorage.volume = JSON.stringify(volume);
+			}
 		},
 		updateInfo: (state: IEditorState, action: PayloadAction<{info: 'title' | 'artist' | 'url', value: string}>) => {
 			state.info[action.payload.info] = action.payload.value;
@@ -589,7 +695,6 @@ function changeBeatSnap(mapState: IMapState, startIndex: number) {
 }
 
 function getInitialLines(bpm: number, sectionLineCount: number) {
-	const initialNotesStatus = [...Array(4)].map(() => NotesStatus.NONE);
 	return [...Array(sectionLineCount)].map((value, index) => {
 		return {
 			status: [...initialNotesStatus],

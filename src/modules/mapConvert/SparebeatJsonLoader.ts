@@ -1,5 +1,5 @@
 import ISparebeatJson, { mapUnion } from './ISparebeatJson';
-import { INotesLineState, IMapState, assignSection, searchActiveTime, getBpmChanges, connectLongNotes } from '../editorModule';
+import { INotesLineState, assignSection, searchActiveTime, getBpmChanges, connectLongNotes } from '../editorModule';
 import { NotesStatus } from '../../components/map/Notes';
 
 export default class SparebeatJsonLoader {
@@ -13,31 +13,36 @@ export default class SparebeatJsonLoader {
 		return this.json;
 	}
 
-	public getMapState(difficulty: 'easy' | 'normal' | 'hard'): IMapState | number {
-		const lines = this.loadMap(this.json.map[difficulty]);
-		if (typeof lines === 'number') {
-			return lines;
+	public getMapState(difficulty: 'easy' | 'normal' | 'hard') {
+		const converted = this.loadMap(this.json.map[difficulty]);
+		if (converted !== undefined) {
+			const { lines, failed } = converted;
+			if (typeof lines === 'number') {
+				return lines;
+			}
+			const sections = assignSection(lines, this.json.beats !== undefined ? this.json.beats * 4 : 16);
+			return { state: {
+				snap24: lines[0].snap24,
+				currentSection: 0,
+				sectionLength: sections.length,
+				lines: lines,
+				linesHistory: [lines],
+				historyIndex: 0,
+				bpmChanges: getBpmChanges(lines),
+				activeTime: searchActiveTime(lines),
+			}, failed };
+		} else {
+			return undefined;
 		}
-		const sections = assignSection(lines, this.json.beats !== undefined ? this.json.beats * 4 : 16);
-		return {
-			snap24: lines[0].snap24,
-			currentSection: 0,
-			sectionLength: sections.length,
-			lines: lines,
-			linesHistory: [lines],
-			historyIndex: 0,
-			bpmChanges: getBpmChanges(lines),
-			activeTime: searchActiveTime(lines),
-		};
 	}
 
-	private loadMap(map: mapUnion[]): INotesLineState[] | number {
+	private loadMap(map: mapUnion[]) {
 		let bpm = parseFloat(this.json.bpm.toString());
 		if (isNaN(bpm) && typeof map[0] === 'object') {
 			bpm = map[0].bpm !== undefined ? parseFloat(map[0].bpm.toString()) : NaN;
 		}
 		if (isNaN(bpm)) {
-			return -1;
+			return undefined;
 		}
 		if (map.length === 0) {
 			map.push("");
@@ -46,7 +51,7 @@ export default class SparebeatJsonLoader {
 		let barLineState = true;
 		let inBind = false, snap24 = false;
 		const lines: INotesLineState[] = [];
-		let optionCount = 0;
+		let optionCount = 0, failed = -1;
 		for (let i = 0; i < map.length; i++) {
 			const value = map[i];
 			if (typeof value === 'object') {
@@ -57,7 +62,8 @@ export default class SparebeatJsonLoader {
 			} else {
 				const next = SparebeatJsonLoader.convertMapString(lines, value, snap24, bpm, speed, barLineState, inBind);
 				if (next === undefined) {
-					return i - optionCount;
+					failed = i - optionCount;
+					break;
 				}
 				snap24 = next.snap24;
 				inBind = next.inBind;
@@ -65,7 +71,7 @@ export default class SparebeatJsonLoader {
 		}
 		const beats = this.json.beats !== undefined ? this.json.beats * 4 : 16;
 		SparebeatJsonLoader.modifySection(lines, beats);
-		return lines;
+		return { lines, failed };
 	}
 
 	private static modifySection(lines: INotesLineState[], beats: number) {

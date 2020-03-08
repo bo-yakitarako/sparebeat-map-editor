@@ -14,7 +14,7 @@ interface ISectionColumn {
 
 const SectionColumn: React.SFC<ISectionColumn> = (props: ISectionColumn) => {
 	const dispatch = useDispatch();
-	const { themeDark, editMode, barWidth, barPos } = useSelector((state: AppState) => state);
+	const { themeDark, editMode, barWidth, barColor, barPos } = useSelector((state: AppState) => state);
 	const { notesWidth, intervalRatio, aspect, sectionLineCount } = useSelector((state: AppState) => state.notesDisplay);
 	const notesHeignt = notesWidth / aspect;
 	const height = (sectionLineCount / 2) * (3 * notesHeignt) * intervalRatio;
@@ -43,7 +43,7 @@ const SectionColumn: React.SFC<ISectionColumn> = (props: ISectionColumn) => {
 		position: 'absolute',
 		width: notesWidth * 4,
 		height: barWidth,
-		backgroundColor: '#cece9e',
+		backgroundColor: barColor,
 		left: 0,
 		zIndex: 3,
 	};

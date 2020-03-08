@@ -43,7 +43,6 @@ export function stopMusic() {
 	dom.pause();
 	clapSrcList = [];
 	clapGain = undefined;
-	musicGain = undefined;
 }
 
 export function clapActiveTime(activeTimes: { count: number, time: number }[], currentTime:number, startTime: number, ratioSliderValue: number, volumeSliderValue: number) {

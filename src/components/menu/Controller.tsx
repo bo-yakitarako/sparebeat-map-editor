@@ -42,9 +42,6 @@ const Controller = () => {
 	const notesWidth = 60;
 	const { loaded, editMode, notesMode, currentTime, playing, startTime, sliderValue } = useSelector((state: AppState) => state);
 	const { snap24, linesHistory, historyIndex, activeTime } = useSelector((state: AppState) => state[state.current]);
-	music.onloadeddata = () => {
-		dispatch(editorModule.actions.load());
-	};
 	if (!playing) {
 		music.pause();
 	}
@@ -114,21 +111,25 @@ const Controller = () => {
 			<br />
 			<Divider />
 			<div>再生位置</div>
-			<Slider disabled={!loaded} max={1000} labelRenderer={false} value={sliderValue.timePosition} />
+			<Slider disabled={!loaded} max={1000} labelRenderer={false} value={sliderValue.timePosition} onChange={changeSliderValue('timePosition')} onRelease={(value: number) => {
+				if (playing) {
+					pause();
+				}
+				dispatch(editorModule.actions.moveCurrentTimeOnSlider(value));
+			}} />
 			<br />
 			<Divider />
 			<div>再生速度</div>
 			<Slider min={1} max={100} intent="success" labelRenderer={false} value={sliderValue.playbackRate} onChange={changeSliderValue('playbackRate')} onRelease={(value: number) => {
-					music.playbackRate = value / 100;
-					pause();
-				 }
-			} />
+				music.playbackRate = value / 100;
+				pause();
+			}} />
 			<br />
 			<Divider />
 			<div>楽曲音量</div>
-			<Slider max={100} intent="warning" labelRenderer={false} value={sliderValue.musicVolume} onChange={changeSliderValue('musicVolume')} onRelease={
-				(value: number) => { music.volume = value / 100 }
-			} />
+			<Slider max={100} intent="warning" labelRenderer={false} value={sliderValue.musicVolume} onChange={changeSliderValue('musicVolume')} onRelease={(value: number) => {
+				music.volume = value / 100;
+			}} />
 			<br />
 			<Divider />
 			<div>タップ音量</div>
