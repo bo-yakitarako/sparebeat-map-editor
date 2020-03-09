@@ -1,6 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { cloneDeep } from 'lodash';
 import MusicBar, { SectionPos } from './music/MusicBar';
+import music from './music/clapModule';
 import { NotesStatus } from '../components/map/Notes';
 import { IChangeNotesStatus } from '../components/map/notesUnit/Line';
 import ISparebeatJson from './mapConvert/ISparebeatJson';
@@ -91,6 +92,7 @@ export interface IEditorState {
 	barColor: string;
 	barPos: SectionPos;
 	playing: boolean;
+	openTest: boolean;
 	sliderValue: {
 		timePosition: number;
 		playbackRate: number;
@@ -171,6 +173,7 @@ const initialState: IEditorState = {
 	barColor: setting ? setting.color.barColor : '#cece9e',
 	barPos: { section: 0, pos: (notesWidth / 2) / aspect - barWidth / 2 },
 	playing: false,
+	openTest: false,
 	sliderValue: {
 		timePosition: 0,
 		playbackRate: 100,
@@ -229,7 +232,6 @@ const adjustCurrentSection = (state: IEditorState, target: number) => {
 	}
 }
 
-const music = document.querySelector('#music') as HTMLAudioElement;
 const mapStateModule = createSlice({
 	name: 'notesState',
 	initialState: initialState,
@@ -634,6 +636,9 @@ const mapStateModule = createSlice({
 			state[state.current].sectionLength = assignSection(state[state.current].lines, state.notesDisplay.sectionLineCount).length;
 			state[state.current].activeTime = searchActiveTime(state[state.current].lines);
 			adjustCurrentSection(state, 0);
+		},
+		toggleTest: (state: IEditorState) => {
+			state.openTest = !state.openTest;
 		},
 	}
 });

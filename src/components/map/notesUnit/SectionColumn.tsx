@@ -27,12 +27,13 @@ const SectionColumn: React.SFC<ISectionColumn> = (props: ISectionColumn) => {
 		zIndex: 1,
 		cursor: editMode !== 'add' ? 'pointer' : 'default',
 	};
+	const laneLineWidth = notesWidth / 25 < 1 ? 1 : notesWidth / 25;
 	const laneLineStyle = (x: number): React.CSSProperties => {
 		const style: React.CSSProperties = {
 			position: 'absolute',
-			left: `${x}px`,
+			left: x - laneLineWidth / 2,
 			top: 0,
-			width: `1px`,
+			width: laneLineWidth,
 			height: `100%`,
 			backgroundColor: themeDark ? "#BFCCD6" : "#5C7080",
 			zIndex: 2,

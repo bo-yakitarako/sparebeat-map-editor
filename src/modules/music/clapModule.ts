@@ -1,14 +1,12 @@
 const context = new AudioContext();
-let musicGain: GainNode | undefined = undefined;
 let clapBuffer: AudioBuffer | undefined = undefined;
 let clapSrcList: AudioBufferSourceNode[] = [];
 let clapGain: GainNode | undefined = undefined;
 
 const dom = document.querySelector('#music') as HTMLAudioElement;
+export default dom;
 const musicSource = context.createMediaElementSource(dom);
-musicGain = context.createGain();
-musicSource.connect(musicGain);
-musicGain.connect(context.destination);
+musicSource.connect(context.destination);
 
 window.addEventListener('load', () => {
 	const xhr = new XMLHttpRequest();
@@ -22,10 +20,10 @@ window.addEventListener('load', () => {
 	xhr.send();
 });
 
-export function playMusic(currentTime: number) {
-	dom.currentTime = currentTime;
-	dom.play();
-}
+// export function playMusic(currentTime: number) {
+// 	dom.currentTime = currentTime;
+// 	dom.play();
+// }
 
 function clapOnce(time: number) {
 	if (clapBuffer !== undefined) {
@@ -45,14 +43,15 @@ export function stopMusic() {
 	clapGain = undefined;
 }
 
-export function clapActiveTime(activeTimes: { count: number, time: number }[], currentTime:number, startTime: number, ratioSliderValue: number, volumeSliderValue: number) {
+export function clapActiveTime(activeTimes: { count: number, time: number }[], startTime: number, ratioSliderValue: number, volumeSliderValue: number) {
 	if (volumeSliderValue !== 0) {
 		clapGain = context.createGain();
 		clapGain.connect(context.destination);
 		const ratio = ratioSliderValue / 100;
 		clapGain.gain.value = 2 * (volumeSliderValue / 100) - 1;
-		currentTime -= startTime / 1000;
-		activeTimes.filter(activeTimeObject => activeTimeObject.time > currentTime).forEach(activeTimeObject => {
+		const currentTime = dom.currentTime - startTime / 1000;
+		const filtered = activeTimes.filter(activeTimeObject => activeTimeObject.time > currentTime);
+		filtered.forEach(activeTimeObject => {
 			const clapTime = (activeTimeObject.time - currentTime) / ratio;
 			[...Array(activeTimeObject.count)].forEach(() => { clapOnce(clapTime) });
 		});

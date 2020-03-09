@@ -23,7 +23,7 @@ const editorStyle: React.CSSProperties = {
 
 function App() {
     const dispatch = useDispatch();
-    const { themeDark, editMode } = useSelector((state: AppState) => state);
+    const { themeDark, editMode, openTest } = useSelector((state: AppState) => state);
     const { lines, currentSection } = useSelector((state: AppState) => state[state.current]);
     const { column, notesWidth, intervalRatio, aspect, sectionLineCount } = useSelector((state: AppState) => state.notesDisplay);
     const { baseX, baseY, x, y, width, height } = useSelector((state: AppState) => state.selector);
@@ -113,6 +113,9 @@ function App() {
                 <Selector />
             </div>
             <Start />
+            <div style={{ position: 'fixed', width: '100%', height: '100vh', left: 0, top: 0, display: openTest ? 'block' : 'none', zIndex: 15, backgroundColor: 'rgba(0, 0, 0, 0.5)', cursor: 'pointer' }} onClick={() => { dispatch(editorModule.actions.toggleTest()) }} >
+                <div id="sparebeat_test" style={{ position: 'absolute', width: 960, height: 640, left: '50%', top: '50%', transform: 'translate(-50%, -50%)', zIndex: 20, }}></div>
+            </div>
         </div>
     );
 }

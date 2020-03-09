@@ -1,10 +1,9 @@
 import { take, put, select, fork, cancel, cancelled, delay } from 'redux-saga/effects';
 import editorModule from '../editorModule';
 import { AppState } from '../../store';
-import { stopMusic } from '../music/clapModule';
+import music, { stopMusic } from '../music/clapModule';
 
 const sectionHeight = (state: AppState) => state.notesDisplay.sectionLineCount * 1.5 * state.notesDisplay.intervalRatio * state.notesDisplay.notesWidth / state.notesDisplay.aspect - (state.barWidth);
-const music = document.getElementById('music') as HTMLAudioElement;
 function* playMusic() {
 	while (true) {
 		try {

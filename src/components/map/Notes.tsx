@@ -59,7 +59,7 @@ const NotesComponent: React.SFC<INotes> = (props: INotes) => {
 		const strokeWidth = props.width / 25;
 		const points: string[] = [`${strokeWidth},${height / 2}`, `${props.width / 2},${strokeWidth}`, `${props.width - strokeWidth},${height / 2}`, `${props.width / 2},${height - strokeWidth}`]
 		const diamondPointsValue = `${points[0]} ${points[1]} ${points[2]} ${points[3]} ${points[0]} ${points[1]}`;
-		const fillColor = props.status === NotesStatus.ATTACK ? notesColors[sparebeatTheme][4] : props.status === NotesStatus.NONE ? (themeDark ? "#5C7080" : "#F5F8FA") : notesColors[sparebeatTheme][props.index];
+		const fillColor = props.status === NotesStatus.ATTACK ? notesColors[sparebeatTheme][4] : props.status === NotesStatus.NONE ? (themeDark ? "#738694" : "#F5F8FA") : notesColors[sparebeatTheme][props.index];
 		const strokeColor = props.selected ? '#2965CC' : props.inBind ? notesColors.default[4] : (themeDark ? "#BFCCD6" : "#5C7080");
 		const click = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
 			if (props.onClick) {

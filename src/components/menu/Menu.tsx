@@ -5,7 +5,7 @@ import { Button, Navbar, NavbarDivider, NavbarGroup, NavbarHeading, Tooltip, Ali
 import { IconNames } from '@blueprintjs/icons';
 import { Select, ItemRenderer } from '@blueprintjs/select';
 import editorModule, { DifficlutySelect } from '../../modules/editorModule';
-import { stopMusic } from '../../modules/music/clapModule';
+import music, { stopMusic } from '../../modules/music/clapModule';
 import SparebeatJsonExport from '../../modules/mapConvert/SparebeatJsonExport';
 import BackgroundColorPicker from './BackgroundColorPicker';
 import EditorSetting from './EditorSetting';
@@ -27,7 +27,6 @@ interface ICloneSelector {
 	opponent: DifficlutySelect;
 }
 
-const music = document.querySelector('#music') as HTMLAudioElement;
 const Menu = () => {
 	const dispatch = useDispatch();
 	const [ infoDialog, infoDialogOpen ] = useState(false);
@@ -36,7 +35,6 @@ const Menu = () => {
 	const [ targetSelect, changeTarget ] = useState('normal' as DifficlutySelect);
 	const [ backDialog, backDialogOpen ] = useState(false);
 	const [ settingDialog, settingOpen ] = useState(false);
-	const state = useSelector((state: AppState) => state);
 	const { themeDark, loaded, playing, current } = useSelector((state: AppState) => state);
 	const { title, artist, url, level } = useSelector((state: AppState) => state.info);
 	const mapJson = useSelector((state: AppState) => new SparebeatJsonExport(state).export());
@@ -145,14 +143,16 @@ const Menu = () => {
 				</Tooltip>
 				<NavbarDivider />
 				<Tooltip disabled={!loaded} content="テストプレイ">
-					<Button disabled={!loaded} className={Classes.MINIMAL} icon={IconNames.DESKTOP} large={true} form="testplay_form" onClick={() => {
-						(document.getElementById('form_map') as HTMLInputElement).value = JSON.stringify(new SparebeatJsonExport(state).export());
-						const testplayForm = document.getElementById('testplay_form') as HTMLFormElement;
-						testplayForm.submit();
-						if ((document.getElementById('form_music') as HTMLInputElement).value !== '') {
-							(document.getElementById('form_music') as HTMLInputElement).value = '';
-						}
-						(document.getElementById('form_map') as HTMLInputElement).value = '';
+					<Button disabled={!loaded} className={Classes.MINIMAL} icon={IconNames.DESKTOP} large={true} onClick={() => {
+						const testDom = document.querySelector('#sparebeat_test') as HTMLDivElement;
+						testDom.innerHTML = '<iframe id="sparebeat" width="960" height="640" src="https://sparebeat.com/embed/" frameborder="0"></iframe>';
+						const encodeBase64 = (str: string) => window.btoa(unescape(encodeURIComponent(str)));
+						const dataUrl = 'data:application/json;base64,' + encodeBase64(JSON.stringify(mapJson));
+						const script = document.createElement('script');
+						script.innerHTML = `Sparebeat.load('${dataUrl}', '${music.src}')`;
+						testDom.appendChild(script);
+						console.log(dataUrl);
+						dispatch(editorModule.actions.toggleTest());
 					}} />
 				</Tooltip>
 				<Tooltip disabled={!loaded} content="譜面ファイルをクリップボードにコピー、サイトに保存">

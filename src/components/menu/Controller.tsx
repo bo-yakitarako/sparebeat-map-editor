@@ -6,7 +6,7 @@ import { IconNames } from '@blueprintjs/icons';
 import Notes, { NotesStatus } from '../map/Notes';
 import mapStateModule from '../../modules/editorModule';
 import editorModule, { EditMode, NotesMode, Slider as SliderType } from '../../modules/editorModule';
-import { playMusic, clapActiveTime, stopMusic, changeClapVolume } from '../../modules/music/clapModule';
+import music, { clapActiveTime, stopMusic, changeClapVolume } from '../../modules/music/clapModule';
 
 const controllerStyle: React.CSSProperties = {
 	display: "inline-flex",
@@ -35,7 +35,6 @@ const formatTime = (time: number) => {
 	return `${doubleDigest(minute)}:${doubleDigest(second)}:${doubleDigest(mill)}`;
 };
 
-const music = document.getElementById('music') as HTMLAudioElement;
 const Controller = () => {
 	const dispatch = useDispatch();
 	const putting = true;
@@ -56,8 +55,8 @@ const Controller = () => {
 	};
 	const pause = () => {
 		music.pause();
-		music.currentTime = currentTime;
 		stopMusic();
+		dispatch(editorModule.actions.updateCurrentTime(music.currentTime));
 		dispatch(editorModule.actions.pause());
 	};
 
@@ -95,8 +94,8 @@ const Controller = () => {
 				<Button disabled={!loaded} icon={!playing ? IconNames.PLAY : IconNames.PAUSE} onClick={() => {
 					if (!playing) {
 						dispatch(editorModule.actions.play());
-						playMusic(currentTime);
-						clapActiveTime(activeTime, currentTime, startTime, sliderValue.playbackRate, sliderValue.clapVolume);
+						music.play();
+						clapActiveTime(activeTime, startTime, sliderValue.playbackRate, sliderValue.clapVolume);
 					} else {
 						pause();
 					}
