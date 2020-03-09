@@ -9,7 +9,7 @@ import { NotesStatus } from './Notes';
 
 const Map = () => {
 	const dispatch = useDispatch();
-	const { currentTime, editMode, current, playing } = useSelector((state: AppState) => state);
+	const { currentTime, editMode, current, playing, startTime } = useSelector((state: AppState) => state);
 	const { lines, currentSection, bpmChanges } = useSelector((state: AppState) => state[state.current]);
 	const { column, sectionLineCount } = useSelector((state: AppState) => state.notesDisplay);
 	const sections = assignSection(lines, sectionLineCount);
@@ -82,7 +82,7 @@ const Map = () => {
 					<Tooltip content={infoTooltip} >
 						<Icon style={{cursor: 'pointer'}} icon={IconNames.INFO_SIGN} iconSize={24} />
 					</Tooltip>{" "}
-					BPM: {getCurrentBpm(bpmChanges, currentTime)}
+					BPM: {getCurrentBpm(bpmChanges, currentTime - startTime / 1000)}
 				</div>
 			</div>
 		</div>

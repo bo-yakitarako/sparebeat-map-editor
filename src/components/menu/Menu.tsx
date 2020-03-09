@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useSelector, useDispatch } from "react-redux";
 import { AppState } from '../../store';
-import { Button, Navbar, NavbarDivider, NavbarGroup, NavbarHeading, Tooltip, Alignment, Classes, Toaster, Position, Intent, Dialog, InputGroup, MenuItem } from '@blueprintjs/core';
+import { Button, Navbar, NavbarDivider, NavbarGroup, NavbarHeading, Tooltip, Alignment, Classes, Toaster, Position, Intent, Dialog, InputGroup, MenuItem, AnchorButton } from '@blueprintjs/core';
 import { IconNames } from '@blueprintjs/icons';
 import { Select, ItemRenderer } from '@blueprintjs/select';
 import editorModule, { DifficlutySelect } from '../../modules/editorModule';
@@ -12,7 +12,7 @@ import EditorSetting from './EditorSetting';
 
 const menuToast = Toaster.create({
 	position: Position.TOP,
-	maxToasts: 1,
+	maxToasts: 3,
 });
 
 interface ICloneSelect {
@@ -96,7 +96,10 @@ const Menu = () => {
 				</div>
 				{dialogFooter(infoDialogOpen)}
 			</Dialog>
-			<Dialog className={themeDark ? Classes.DARK : ''} isOpen={diffDialog} title="難易度変更" onClose={() => { diffDialogOpen(false) }}>
+			<Dialog className={themeDark ? Classes.DARK : ''} isOpen={diffDialog} title="難易度変更" onClose={() => {
+				dispatch(editorModule.actions.saveSetting());
+				diffDialogOpen(false);
+			}}>
 				<div className={ Classes.DIALOG_BODY } style={{ textAlign: 'center' }}>
 					<div style={{ marginBottom: '10%' }} >
 						{diffWindow('easy')}
@@ -111,7 +114,12 @@ const Menu = () => {
 						<Button text="コピー" onClick={() => { dispatch(editorModule.actions.cloneDifficulty({ origin: originSelect, target: targetSelect })) }} />
 					</div>
 				</div>
-				{dialogFooter(diffDialogOpen)}
+				<div className={Classes.DIALOG_FOOTER} style={{ textAlign: 'right' }} >
+					<Button text="閉じる" onClick={() => {
+						dispatch(editorModule.actions.saveSetting());
+						diffDialogOpen(false);
+					}} />
+				</div>
 			</Dialog>
 			<Dialog className={themeDark ? Classes.DARK + ' dialog' : 'dialog'} style={{ width: 600 }} isOpen={backDialog} title="背景色設定" onClose={() => { backDialogOpen(false) }}>
 				<BackgroundColorPicker />
@@ -157,7 +165,12 @@ const Menu = () => {
 				</Tooltip>
 				<Tooltip disabled={!loaded} content="譜面ファイルをクリップボードにコピー、サイトに保存">
 					<Button disabled={!loaded} className={Classes.MINIMAL} icon={IconNames.SAVED} large={true} onClick={() => {
-						localStorage.map = JSON.stringify(mapJson);
+						try {
+							localStorage.map = JSON.stringify(mapJson);
+						} catch {
+							localStorage.removeItem('music');
+							localStorage.map = JSON.stringify(mapJson);
+						}
 						const listener = (e: ClipboardEvent) => {
 							if (e.clipboardData) {
 								e.clipboardData.setData("text/plain", JSON.stringify(mapJson, null, '\t'));
@@ -187,6 +200,9 @@ const Menu = () => {
 					<Button className={Classes.MINIMAL} icon={IconNames.HELP} large={true} onClick={() => {
 						menuToast.show({ message: 'もうちょい待って><', intent: Intent.WARNING, timeout: 2000 });
 					}} />
+				</Tooltip>
+				<Tooltip disabled={loaded} content="オンラインオーディオコンバータ">
+					<AnchorButton disabled={loaded} minimal={true} icon={IconNames.CHANGES} large={true} href="https://online-audio-converter.com/ja/" target="_blank" />
 				</Tooltip>
 			</NavbarGroup>
 		</Navbar>

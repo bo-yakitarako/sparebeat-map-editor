@@ -55,6 +55,7 @@ interface ISaveSetting {
 		intervalRatio: number;
 		barWidth: number;
 		historySize: number;
+		difficulty: DifficlutySelect;
 	};
 	color: {
 		themeDark: boolean;
@@ -206,7 +207,7 @@ const initialState: IEditorState = {
 	},
 	startTime: 0,
 	currentTime: 0.0,
-	current: 'hard',
+	current: setting && setting.general.difficulty ? setting.general.difficulty : 'hard',
 	easy: initialMapState,
 	normal: cloneDeep(initialMapState),
 	hard: cloneDeep(initialMapState),
@@ -263,10 +264,10 @@ const mapStateModule = createSlice({
 			});
 		},
 		saveSetting: (state: IEditorState) => {
-			const { themeDark, sparebeatTheme, notesDisplay: { notesWidth, aspect, column, intervalRatio }, barColor, barWidth, historySize } = state;
+			const { themeDark, sparebeatTheme, notesDisplay: { notesWidth, aspect, column, intervalRatio }, barColor, barWidth, current, historySize } = state;
 			const setting: ISaveSetting = {
 				general: {
-					notesWidth, aspect, column, intervalRatio, barWidth, historySize
+					notesWidth, aspect, column, intervalRatio, barWidth, historySize, difficulty: current
 				},
 				color: {
 					themeDark, sparebeatTheme, barColor
