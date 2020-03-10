@@ -1,10 +1,11 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { cloneDeep } from 'lodash';
 import MusicBar, { SectionPos } from './music/MusicBar';
-import music from './music/clapModule';
+import music, { clapActiveTime, stopMusic } from './music/clapModule';
 import { NotesStatus } from '../components/map/Notes';
 import { IChangeNotesStatus } from '../components/map/notesUnit/Line';
 import ISparebeatJson from './mapConvert/ISparebeatJson';
+import SparebeatJsonExport from "./mapConvert/SparebeatJsonExport";
 
 export type NotesOption = 'inBind' | 'bpm' | 'speed' | 'barLine' | 'barLineState';
 export interface INotesLineState {
@@ -55,13 +56,14 @@ interface ISaveSetting {
 		intervalRatio: number;
 		barWidth: number;
 		historySize: number;
-		difficulty: DifficlutySelect;
+		clapDelay: number;
 	};
 	color: {
 		themeDark: boolean;
 		sparebeatTheme: SparebeatTheme;
 		barColor: string;
-	}
+	};
+	difficulty: DifficlutySelect;
 };
 
 interface ISaveVolume {
@@ -132,10 +134,12 @@ export interface IEditorState {
 	};
 	startTime: number;
 	currentTime: number;
+	clapDelay: number;
 	current: DifficlutySelect;
 	easy: IMapState;
 	normal: IMapState;
 	hard: IMapState;
+	mapChanged: boolean;
 	historySize: number;
 }
 
@@ -207,10 +211,12 @@ const initialState: IEditorState = {
 	},
 	startTime: 0,
 	currentTime: 0.0,
-	current: setting && setting.general.difficulty ? setting.general.difficulty : 'hard',
+	clapDelay: setting && setting.general.clapDelay ? setting.general.clapDelay : 0,
+	current: setting && setting.difficulty ? setting.difficulty : 'hard',
 	easy: initialMapState,
 	normal: cloneDeep(initialMapState),
 	hard: cloneDeep(initialMapState),
+	mapChanged: false,
 	historySize: setting ? setting.general.historySize : 50,
 };
 
@@ -264,16 +270,29 @@ const mapStateModule = createSlice({
 			});
 		},
 		saveSetting: (state: IEditorState) => {
-			const { themeDark, sparebeatTheme, notesDisplay: { notesWidth, aspect, column, intervalRatio }, barColor, barWidth, current, historySize } = state;
+			const { themeDark, sparebeatTheme, notesDisplay: { notesWidth, aspect, column, intervalRatio }, barColor, barWidth, current, clapDelay, historySize } = state;
 			const setting: ISaveSetting = {
 				general: {
-					notesWidth, aspect, column, intervalRatio, barWidth, historySize, difficulty: current
+					notesWidth, aspect, column, intervalRatio, barWidth, clapDelay, historySize,
 				},
 				color: {
 					themeDark, sparebeatTheme, barColor
 				},
+				difficulty: current
 			};
 			localStorage.setting = JSON.stringify(setting);
+		},
+		saveMap: (state: IEditorState) => {
+			if (state.loaded) {
+				const mapJson = new SparebeatJsonExport(state).export();
+				try {
+					localStorage.map = JSON.stringify(mapJson);
+				} catch {
+					localStorage.removeItem('music');
+					localStorage.map = JSON.stringify(mapJson);
+				}
+				state.mapChanged = false;
+			}
 		},
 		load: (state: IEditorState) => {
 			state.loaded = true;
@@ -319,14 +338,48 @@ const mapStateModule = createSlice({
 			state.rangeSelect.select = [];
 			state.editMode = action.payload;
 		},
+		changeEditModeToAdd: (state: IEditorState) => {
+			state.rangeSelect.select = [];
+			state.editMode = 'add';
+		},
+		changeEditModeToSelect: (state: IEditorState) => {
+			state.rangeSelect.select = [];
+			state.editMode = 'select';
+		},
+		changeEditModeToMusic: (state: IEditorState) => {
+			state.rangeSelect.select = [];
+			state.editMode = 'music';
+		},
 		changeNotesMode: (state: IEditorState, action: PayloadAction<NotesMode>) => {
 			state.notesMode = action.payload;
 		},
-		play: (state: IEditorState) => {
-			state.playing = true;
+		changeNotesModeToNormal: (state: IEditorState) => {
+			state.notesMode = 'normal';
 		},
-		pause: (state: IEditorState) => {
-			state.playing = false;
+		changeNotesModeToAttack: (state: IEditorState) => {
+			state.notesMode = 'attack';
+		},
+		changeNotesModeToLongStart: (state: IEditorState) => {
+			state.notesMode = 'longStart';
+		},
+		changeNotesModeToLongEnd: (state: IEditorState) => {
+			state.notesMode = 'longEnd';
+		},
+		toggleMusic: (state: IEditorState) => {
+			if (state.loaded) {
+				if (!state.playing) {
+					const { startTime, clapDelay, sliderValue: { playbackRate, clapVolume } } = state;
+					const { activeTime } = state[state.current];
+					clapActiveTime(activeTime, startTime, clapDelay, playbackRate, clapVolume);
+					music.play();
+				} else {
+					stopMusic();
+					music.pause();
+					state.currentTime = music.currentTime;
+					state.sliderValue.timePosition = 1000 * (state.currentTime / music.duration);
+				}
+				state.playing = !state.playing;
+			}
 		},
 		updateBarPos: (state: IEditorState, action: PayloadAction<number>) => {
 			state.currentTime = action.payload;
@@ -372,22 +425,29 @@ const mapStateModule = createSlice({
 				localStorage.volume = JSON.stringify(volume);
 			}
 		},
+		changeClapDelay: (state: IEditorState, action: PayloadAction<number>) => {
+			state.clapDelay = action.payload;
+		},
 		updateInfo: (state: IEditorState, action: PayloadAction<{info: 'title' | 'artist' | 'url', value: string}>) => {
 			state.info[action.payload.info] = action.payload.value;
+			state.mapChanged = true;
 		},
 		updateLevel: (state: IEditorState, action: PayloadAction<{difficulty: DifficlutySelect, value: string}>) => {
 			state.info.level[action.payload.difficulty] = action.payload.value;
+			state.mapChanged = true;
 		},
 		updateBgColor: (state: IEditorState, action: PayloadAction<{ index: number, color: string }>) => {
 			if (state.info.bgColor.length === 0) {
 				state.info.bgColor = ['#43C6AC', '#191654'];
 			}
 			state.info.bgColor[action.payload.index] = action.payload.color;
+			state.mapChanged = true;
 		},
 		setStartTime: (state: IEditorState, action: PayloadAction<{value: number, time: number}>) => {
 			state.startTime = isNaN(action.payload.value) ? 0 : action.payload.value;
 			const musicBar = new MusicBar(state, state[state.current].bpmChanges);
 			state.barPos = musicBar.currentPosition(action.payload.time);
+			state.mapChanged = true;
 		},
 		setSelectorBase: (state: IEditorState, action: PayloadAction<{x: number, y: number}>) => {
 			state.selector.baseX = action.payload.x;
@@ -423,6 +483,7 @@ const mapStateModule = createSlice({
 					}
 				}
 			}
+			state.mapChanged = true;
 			state[state.current].activeTime = searchActiveTime(state[state.current].lines);
 			pushHistory(state[state.current], state[state.current].lines, state.historySize);
 		},
@@ -444,6 +505,7 @@ const mapStateModule = createSlice({
 				}
 			});
 			state.rangeSelect.copy = copyObject;
+			state.rangeSelect.select = [];
 		},
 		pasteSelect: (state: IEditorState, action: PayloadAction<{initialLine: number, initialLane: number}>) => {
 			const { initialLine, initialLane } = action.payload;
@@ -497,6 +559,8 @@ const mapStateModule = createSlice({
 				});
 			}
 			if (changed) {
+				state.mapChanged = true;
+				state[state.current].activeTime = searchActiveTime(state[state.current].lines);
 				pushHistory(state[state.current], state[state.current].lines, state.historySize);
 			}
 		},
@@ -532,6 +596,8 @@ const mapStateModule = createSlice({
 				});
 			}
 			if (changed) {
+				state.mapChanged = true;
+				state[state.current].activeTime = searchActiveTime(state[state.current].lines);
 				pushHistory(state[state.current], state[state.current].lines, state.historySize);
 			}
 		},
@@ -565,6 +631,7 @@ const mapStateModule = createSlice({
 				state[state.current].currentSection++;
 			}
 			state[state.current].activeTime = searchActiveTime(state[state.current].lines);
+			state.mapChanged = true;
 			pushHistory(state[state.current], state[state.current].lines, historySize);
 		},
 		removeSection: (state: IEditorState, action: PayloadAction<number[][]>) => {
@@ -572,9 +639,11 @@ const mapStateModule = createSlice({
 			removeSection(state[state.current], action.payload);
 			state[state.current].sectionLength--;
 			state[state.current].activeTime = searchActiveTime(state[state.current].lines);
+			state.mapChanged = true;
 			pushHistory(state[state.current], state[state.current].lines, state.historySize);
 		},
 		addHistory: (state: IEditorState) => {
+			state.mapChanged = true;
 			pushHistory(state[state.current], state[state.current].lines, state.historySize);
 		},
 		changeSnap: (state: IEditorState) => {
@@ -598,6 +667,7 @@ const mapStateModule = createSlice({
 			target.lines = origin.lines;
 			target.bpmChanges = origin.bpmChanges;
 			target.activeTime = origin.activeTime;
+			state.mapChanged = true;
 			pushHistory(target, target.lines, state.historySize);
 		},
 		deleteMap: (state: IEditorState, action: PayloadAction<DifficlutySelect>) => {
@@ -616,27 +686,35 @@ const mapStateModule = createSlice({
 				state.sliderValue.timePosition = 0;
 				music.currentTime = 0;
 			}
+			state.mapChanged = true;
 			pushHistory(state[action.payload], lines, state.historySize);
 		},
 		undo: (state: IEditorState) => {
-			state[state.current].historyIndex--;
-			if (state[state.current].historyIndex < 0) {
-				state[state.current].historyIndex = 0;
+			if (state[state.current].historyIndex > 0) {
+				state[state.current].historyIndex--;
+				if (state[state.current].historyIndex < 0) {
+					state[state.current].historyIndex = 0;
+				}
+				state[state.current].lines = state[state.current].linesHistory[state[state.current].historyIndex];
+				state[state.current].sectionLength = assignSection(state[state.current].lines, state.notesDisplay.sectionLineCount).length;
+				state[state.current].activeTime = searchActiveTime(state[state.current].lines);
+				adjustCurrentSection(state, 0);
+				state.mapChanged = true;
 			}
-			state[state.current].lines = state[state.current].linesHistory[state[state.current].historyIndex];
-			state[state.current].sectionLength = assignSection(state[state.current].lines, state.notesDisplay.sectionLineCount).length;
-			state[state.current].activeTime = searchActiveTime(state[state.current].lines);
-			adjustCurrentSection(state, 0);
 		},
 		redo: (state: IEditorState) => {
-			state[state.current].historyIndex++;
-			if (state[state.current].historyIndex > state[state.current].linesHistory.length - 1) {
-				state[state.current].historyIndex = state[state.current].linesHistory.length - 1;
+			const { historyIndex, linesHistory } = state[state.current];
+			if (historyIndex < linesHistory.length - 1) {
+				state[state.current].historyIndex++;
+				if (state[state.current].historyIndex > linesHistory.length - 1) {
+					state[state.current].historyIndex = linesHistory.length - 1;
+				}
+				state[state.current].lines = linesHistory[state[state.current].historyIndex];
+				state[state.current].sectionLength = assignSection(state[state.current].lines, state.notesDisplay.sectionLineCount).length;
+				state[state.current].activeTime = searchActiveTime(state[state.current].lines);
+				adjustCurrentSection(state, 0);
+				state.mapChanged = true;
 			}
-			state[state.current].lines = state[state.current].linesHistory[state[state.current].historyIndex];
-			state[state.current].sectionLength = assignSection(state[state.current].lines, state.notesDisplay.sectionLineCount).length;
-			state[state.current].activeTime = searchActiveTime(state[state.current].lines);
-			adjustCurrentSection(state, 0);
 		},
 		toggleTest: (state: IEditorState) => {
 			state.openTest = !state.openTest;

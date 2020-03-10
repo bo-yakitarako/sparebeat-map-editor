@@ -4,9 +4,9 @@ let clapSrcList: AudioBufferSourceNode[] = [];
 let clapGain: GainNode | undefined = undefined;
 
 const dom = document.querySelector('#music') as HTMLAudioElement;
-export default dom;
 const musicSource = context.createMediaElementSource(dom);
 musicSource.connect(context.destination);
+export default musicSource.mediaElement;
 
 window.addEventListener('load', () => {
 	const xhr = new XMLHttpRequest();
@@ -43,19 +43,22 @@ export function stopMusic() {
 	clapGain = undefined;
 }
 
-export function clapActiveTime(activeTimes: { count: number, time: number }[], startTime: number, ratioSliderValue: number, volumeSliderValue: number) {
+export function clapActiveTime(activeTimes: { count: number, time: number }[], startTime: number, clapDelay: number, ratioSliderValue: number, volumeSliderValue: number) {
 	if (volumeSliderValue !== 0) {
+		const timeAtClapStart = context.currentTime;
 		clapGain = context.createGain();
 		clapGain.connect(context.destination);
 		const ratio = ratioSliderValue / 100;
 		clapGain.gain.value = 2 * (volumeSliderValue / 100) - 1;
-		const currentTime = dom.currentTime - startTime / 1000;
+		const currentTime = dom.currentTime - (startTime - clapDelay) / 1000;
 		const filtered = activeTimes.filter(activeTimeObject => activeTimeObject.time > currentTime);
 		filtered.forEach(activeTimeObject => {
-			const clapTime = (activeTimeObject.time - currentTime) / ratio;
+			const delay = context.currentTime - timeAtClapStart;
+			const clapTime = (activeTimeObject.time - currentTime - delay) / ratio;
 			[...Array(activeTimeObject.count)].forEach(() => { clapOnce(clapTime) });
 		});
 	}
+	musicSource.mediaElement.play();
 }
 
 export function changeClapVolume(volumeSliderValue: number) {

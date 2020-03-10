@@ -5,7 +5,7 @@ import { Button, Navbar, NavbarDivider, NavbarGroup, NavbarHeading, Tooltip, Ali
 import { IconNames } from '@blueprintjs/icons';
 import { Select, ItemRenderer } from '@blueprintjs/select';
 import editorModule, { DifficlutySelect } from '../../modules/editorModule';
-import music, { stopMusic } from '../../modules/music/clapModule';
+import music from '../../modules/music/clapModule';
 import SparebeatJsonExport from '../../modules/mapConvert/SparebeatJsonExport';
 import BackgroundColorPicker from './BackgroundColorPicker';
 import EditorSetting from './EditorSetting';
@@ -35,7 +35,7 @@ const Menu = () => {
 	const [ targetSelect, changeTarget ] = useState('normal' as DifficlutySelect);
 	const [ backDialog, backDialogOpen ] = useState(false);
 	const [ settingDialog, settingOpen ] = useState(false);
-	const { themeDark, loaded, playing, current } = useSelector((state: AppState) => state);
+	const { themeDark, loaded, playing, current, mapChanged } = useSelector((state: AppState) => state);
 	const { title, artist, url, level } = useSelector((state: AppState) => state.info);
 	const mapJson = useSelector((state: AppState) => new SparebeatJsonExport(state).export());
 	const dialogFooter = (opener: React.Dispatch<React.SetStateAction<boolean>>) => (
@@ -140,9 +140,7 @@ const Menu = () => {
 					<Button disabled={!loaded} className={Classes.MINIMAL} icon={IconNames.MULTI_SELECT} large={true} onClick={() => {
 						diffDialogOpen(true);
 						if (playing) {
-							music.pause();
-							stopMusic();
-							dispatch(editorModule.actions.pause());
+							dispatch(editorModule.actions.toggleMusic());
 						}
 					}} />
 				</Tooltip>
@@ -164,13 +162,8 @@ const Menu = () => {
 					}} />
 				</Tooltip>
 				<Tooltip disabled={!loaded} content="譜面ファイルをクリップボードにコピー、サイトに保存">
-					<Button disabled={!loaded} className={Classes.MINIMAL} icon={IconNames.SAVED} large={true} onClick={() => {
-						try {
-							localStorage.map = JSON.stringify(mapJson);
-						} catch {
-							localStorage.removeItem('music');
-							localStorage.map = JSON.stringify(mapJson);
-						}
+					<Button disabled={!loaded} className={Classes.MINIMAL} icon={IconNames.SAVED} intent={mapChanged ? themeDark ? Intent.PRIMARY : Intent.WARNING : Intent.NONE} large={true} onClick={() => {
+						dispatch(editorModule.actions.saveMap());
 						const listener = (e: ClipboardEvent) => {
 							if (e.clipboardData) {
 								e.clipboardData.setData("text/plain", JSON.stringify(mapJson, null, '\t'));
@@ -204,6 +197,7 @@ const Menu = () => {
 				<Tooltip disabled={loaded} content="オンラインオーディオコンバータ">
 					<AnchorButton disabled={loaded} minimal={true} icon={IconNames.CHANGES} large={true} href="https://online-audio-converter.com/ja/" target="_blank" />
 				</Tooltip>
+				<NavbarHeading style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', right: 20 }}>{ title }</NavbarHeading>
 			</NavbarGroup>
 		</Navbar>
 	)

@@ -6,7 +6,7 @@ import { IconNames } from '@blueprintjs/icons';
 import Notes, { NotesStatus } from '../map/Notes';
 import mapStateModule from '../../modules/editorModule';
 import editorModule, { EditMode, NotesMode, Slider as SliderType } from '../../modules/editorModule';
-import music, { clapActiveTime, stopMusic, changeClapVolume } from '../../modules/music/clapModule';
+import music, { changeClapVolume } from '../../modules/music/clapModule';
 
 const controllerStyle: React.CSSProperties = {
 	display: "inline-flex",
@@ -34,13 +34,12 @@ const formatTime = (time: number) => {
 	const mill = Math.floor(((time - Math.floor(time)) * 100));
 	return `${doubleDigest(minute)}:${doubleDigest(second)}:${doubleDigest(mill)}`;
 };
-
 const Controller = () => {
 	const dispatch = useDispatch();
 	const putting = true;
 	const notesWidth = 60;
 	const { loaded, editMode, notesMode, currentTime, playing, startTime, sliderValue } = useSelector((state: AppState) => state);
-	const { snap24, linesHistory, historyIndex, activeTime } = useSelector((state: AppState) => state[state.current]);
+	const { snap24, linesHistory, historyIndex } = useSelector((state: AppState) => state[state.current]);
 	if (!playing) {
 		music.pause();
 	}
@@ -53,13 +52,6 @@ const Controller = () => {
 	const changeSliderValue = (slider: SliderType) => (value: number) => {
 		dispatch(editorModule.actions.changeSliderValue({slider: slider, value: value}));
 	};
-	const pause = () => {
-		music.pause();
-		stopMusic();
-		dispatch(editorModule.actions.updateCurrentTime(music.currentTime));
-		dispatch(editorModule.actions.pause());
-	};
-
 	return (
 		<Card elevation={Elevation.TWO} style={controllerStyle}>
 			<p>Start Time</p>
@@ -91,19 +83,14 @@ const Controller = () => {
 			<p>Music Player</p>
 			<Card style={currentTimeCardStyle}>{formatTime(currentTime)}</Card>
 			<ButtonGroup fill={true}>
-				<Button disabled={!loaded} icon={!playing ? IconNames.PLAY : IconNames.PAUSE} onClick={() => {
-					if (!playing) {
-						dispatch(editorModule.actions.play());
-						music.play();
-						clapActiveTime(activeTime, startTime, sliderValue.playbackRate, sliderValue.clapVolume);
-					} else {
-						pause();
-					}
-				}} />
+				<Button disabled={!loaded} icon={!playing ? IconNames.PLAY : IconNames.PAUSE} onClick={() => { dispatch(editorModule.actions.toggleMusic()) }} />
 				<Button disabled={!loaded} icon={IconNames.STOP} onClick={() => {
-					pause();
+					if (playing) {
+						dispatch(editorModule.actions.toggleMusic());
+					}
 					dispatch(editorModule.actions.updateCurrentTime(0));
 					dispatch(editorModule.actions.updateBarPos(0));
+					dispatch(editorModule.actions.moveSection(0));
 					music.currentTime = 0;
 				}} />
 			</ButtonGroup>
@@ -112,7 +99,7 @@ const Controller = () => {
 			<div>再生位置</div>
 			<Slider disabled={!loaded} max={1000} labelRenderer={false} value={sliderValue.timePosition} onChange={changeSliderValue('timePosition')} onRelease={(value: number) => {
 				if (playing) {
-					pause();
+					dispatch(editorModule.actions.toggleMusic());
 				}
 				dispatch(editorModule.actions.moveCurrentTimeOnSlider(value));
 			}} />
@@ -120,8 +107,10 @@ const Controller = () => {
 			<Divider />
 			<div>再生速度</div>
 			<Slider min={1} max={100} intent="success" labelRenderer={false} value={sliderValue.playbackRate} onChange={changeSliderValue('playbackRate')} onRelease={(value: number) => {
+				if (playing) {
+					dispatch(editorModule.actions.toggleMusic());
+				}
 				music.playbackRate = value / 100;
-				pause();
 			}} />
 			<br />
 			<Divider />

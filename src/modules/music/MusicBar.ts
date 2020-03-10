@@ -5,12 +5,6 @@ export interface IBpmChanges {
 	time: number;
 }
 
-export interface IClap {
-	music: HTMLAudioElement[];
-	clapIndex: number;
-	clapTime: number[];
-}
-
 export type SectionPos = {
 	section: number,
 	pos: number,
@@ -19,6 +13,7 @@ export type SectionPos = {
 export default class MusicBar {
 	private barWidth: number;
 	private startTime: number;
+	private clapDelay: number;
 	private notesHeight: number;
 	private lines: number;
 	private intervalRatio: number;
@@ -27,6 +22,7 @@ export default class MusicBar {
 	constructor(setting: IEditorState, bpmChanges: IBpmChanges[]) {
 		this.barWidth = setting.barWidth;
 		this.startTime = setting.startTime;
+		this.clapDelay = setting.clapDelay;
 		this.notesHeight = setting.notesDisplay.notesWidth / setting.notesDisplay.aspect;
 		this.lines = setting.notesDisplay.sectionLineCount;
 		this.intervalRatio = setting.notesDisplay.intervalRatio;
@@ -40,7 +36,7 @@ export default class MusicBar {
 	private calcPos = (time: number, bpm: number) => time * bpm * this.notesHeight * this.intervalRatio / 10;
 
 	public currentPosition(time: number): SectionPos {
-		time -= this.startTime / 1000;
+		time -= (this.startTime - this.clapDelay) / 1000;
 		const effectiveBpm = this.bpmChanges.filter((value) => value.time < time);
 		effectiveBpm.push({bpm: 0, time: time});
 		let pos = 0;
@@ -51,7 +47,7 @@ export default class MusicBar {
 		const sectionHeight = this.sectinHeight;
 		const sectionIndex = Math.floor(pos / sectionHeight);
 		const posInSection = pos % sectionHeight;
-		return {section: sectionIndex, pos: posInSection};
+		return { section: sectionIndex, pos: posInSection };
 	}
 
 	public posToTime(sectionPos: SectionPos) {

@@ -20,7 +20,7 @@ const Start = () => {
 	const [loadSaved, loadSavedOpen] = useState(false);
 	const [bpm, bpmChange] = useState(150);
 	const [beats, beatsChange] = useState(4);
-	const { loaded, themeDark, sliderValue } = useSelector((state: AppState) => state);
+	const { loaded, themeDark, playing, sliderValue } = useSelector((state: AppState) => state);
 	window.onload = () => {
 		if (localStorage.music && localStorage.map) {
 			loadSavedOpen(true);
@@ -28,6 +28,8 @@ const Start = () => {
 	};
 	const fadeOut = () => {
 		startDialogOpen(false);
+		dispatch(editorModule.actions.updateBarPos(0));
+		dispatch(editorModule.actions.updateCurrentTime(0));
 		dispatch(editorModule.actions.load());
 	};
 	const loadLocalMap = () => {
@@ -48,11 +50,13 @@ const Start = () => {
 		}
 	};
 	music.onended = () => {
-		dispatch(editorModule.actions.pause());
+		if (playing) {
+			dispatch(editorModule.actions.toggleMusic());
+		}
 	};
 	return (
 		<div style={{ position: 'fixed', width: 'calc(100% - 200px)', minHeight: 'calc(100vh - 50px)', left: !loaded ? '200px' : '100%', top: 50, zIndex: 10, backgroundColor: themeDark ? "#30404D" : "#F5F8FA", transitionProperty: 'left', transitionDuration: '1.0s' }}>
-			<Dialog className="dialog" title="サイトにmp3と譜面データが保存されています" isOpen={loadSaved} isCloseButtonShown={false} >
+			<Dialog className={themeDark ? Classes.DARK + ' dialog' : 'dialog'} title="サイトにmp3と譜面データが保存されています" isOpen={loadSaved} isCloseButtonShown={false} >
 				<div className={Classes.DIALOG_BODY} style={{ textAlign: 'center' }} >
 					<h3 style={{ textAlign: 'left' }}>保存されているデータで再開しますか？</h3>
 					<Button text="いいえ" large={true} style={{ width: '30%', marginRight: '5%' }} onClick={() => { loadSavedOpen(false) }} />
@@ -62,7 +66,7 @@ const Start = () => {
 					}} />
 				</div>
 			</Dialog>
-			<Dialog className="dialog" title="譜面を生成" isOpen={startDialog} canEscapeKeyClose={false} canOutsideClickClose={false} isCloseButtonShown={false} >
+			<Dialog className={themeDark ? Classes.DARK + ' dialog' : 'dialog'} title="譜面を生成" isOpen={startDialog} canEscapeKeyClose={false} canOutsideClickClose={false} isCloseButtonShown={false} >
 				<div className={Classes.DIALOG_BODY}>
 					<div style={{ width: '100%', textAlign: 'center', marginBottom: '5%' }}>
 						<h3 style={{ textAlign: 'left' }}>譜面ファイルを読み込む</h3>

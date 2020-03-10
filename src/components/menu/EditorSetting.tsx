@@ -57,7 +57,7 @@ const ColorSetting = () => {
 
 const DisplaySetting = () => {
 	const dispatch = useDispatch();
-	const { barWidth, notesDisplay: { notesWidth, column, intervalRatio, aspect }, historySize, currentTime } = useSelector((state: AppState) => state);
+	const { barWidth, notesDisplay: { notesWidth, column, intervalRatio, aspect }, historySize, currentTime, clapDelay } = useSelector((state: AppState) => state);
 	const changeNotesDisplay = (setting: NotesDisplay, min: number) => (num: number, str: string) => {
 		dispatch(editorModule.actions.changeNotesDisplay({ setting: setting, value: isNaN(num) ? min : num }));
 	};
@@ -96,6 +96,12 @@ const DisplaySetting = () => {
 				}} />
 			</div>
 			<div style={{ marginBottom: '5%' }}></div>
+			<div style={{ width: '45%', marginBottom: '5%', whiteSpace: 'nowrap' }}>
+				<p>クラップのタイミング</p>
+				<NumericInput fill={true} min={-2000} max={2000} value={clapDelay} onValueChange={(num) => {
+					dispatch(editorModule.actions.changeClapDelay(isNaN(num) ? 0 : num));
+				}} />
+			</div>
 		</div>
 	);
 };

@@ -70,7 +70,7 @@ const Line: React.SFC<ILine> = (props: ILine) => {
 				open(true);
 			}
 		}}>
-			<div style={{position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)'}}>
+			<div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 3, WebkitTextStrokeWidth: notesWidth / 50, WebkitTextStrokeColor: themeDark ? "#30404D" : "#F5F8FA", fontWeight: 900 }}>
 				{bpmChanging ? currentLine.bpm : speedChanging && currentLine.speed ? `×${currentLine.speed.toFixed(1)}` : ''}
 			</div>
 			{currentLine.barLine ? <div style={barLineStyle}></div> : null}
