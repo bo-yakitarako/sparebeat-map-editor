@@ -120,7 +120,7 @@ const Controller = () => {
 			}} />
 			<br />
 			<Divider />
-			<div>タップ音量</div>
+			<div>クラップ音量</div>
 			<Slider max={100} intent="warning" labelRenderer={false} value={sliderValue.clapVolume} onChange={changeSliderValue('clapVolume')} onRelease={changeClapVolume} />
 			<br />
 		</Card>

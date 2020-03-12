@@ -150,14 +150,13 @@ const Menu = () => {
 				<NavbarDivider />
 				<Tooltip disabled={!loaded} content="テストプレイ">
 					<Button disabled={!loaded} className={Classes.MINIMAL} icon={IconNames.DESKTOP} large={true} onClick={() => {
-						const testDom = document.querySelector('#sparebeat_test') as HTMLDivElement;
-						testDom.innerHTML = '<iframe id="sparebeat" width="960" height="640" src="https://sparebeat.com/embed/" frameborder="0"></iframe>';
+						const testDOM = document.querySelector('#sparebeat_test') as HTMLDivElement;
+						testDOM.innerHTML = '<iframe id="sparebeat" width="960" height="640" src="https://sparebeat.com/embed/" frameborder="0"></iframe>';
 						const encodeBase64 = (str: string) => window.btoa(unescape(encodeURIComponent(str)));
 						const dataUrl = 'data:application/json;base64,' + encodeBase64(JSON.stringify(mapJson));
 						const script = document.createElement('script');
 						script.innerHTML = `Sparebeat.load('${dataUrl}', '${music.src}')`;
-						testDom.appendChild(script);
-						console.log(dataUrl);
+						testDOM.appendChild(script);
 						dispatch(editorModule.actions.toggleTest());
 					}} />
 				</Tooltip>
@@ -189,10 +188,11 @@ const Menu = () => {
 				<Tooltip content="エディタ設定">
 					<Button className={Classes.MINIMAL} icon={IconNames.COG} large={true} onClick={() => { settingOpen(true) }} />
 				</Tooltip>
-				<Tooltip content="ヘルプ">
-					<Button className={Classes.MINIMAL} icon={IconNames.HELP} large={true} onClick={() => {
-						menuToast.show({ message: 'もうちょい待って><', intent: Intent.WARNING, timeout: 2000 });
-					}} />
+				<Tooltip content="使い方">
+					<AnchorButton className={Classes.MINIMAL} icon={IconNames.HELP} large={true} href="https://note.com/bo_yakitarako/n/n287021401622" target="_blank" />
+				</Tooltip>
+				<Tooltip content="Sparebeat設定">
+					<AnchorButton minimal large icon={IconNames.SETTINGS} href="https://sparebeat.com/settings" onMouseDown={() => { dispatch(editorModule.actions.saveMap()) }} />
 				</Tooltip>
 				<Tooltip disabled={loaded} content="オンラインオーディオコンバータ">
 					<AnchorButton disabled={loaded} minimal={true} icon={IconNames.CHANGES} large={true} href="https://online-audio-converter.com/ja/" target="_blank" />

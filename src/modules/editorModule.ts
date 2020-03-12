@@ -432,6 +432,9 @@ const mapStateModule = createSlice({
 			state.info[action.payload.info] = action.payload.value;
 			state.mapChanged = true;
 		},
+		loadExternalMap: (state: IEditorState) => {
+			state.mapChanged = true;
+		},
 		updateLevel: (state: IEditorState, action: PayloadAction<{difficulty: DifficlutySelect, value: string}>) => {
 			state.info.level[action.payload.difficulty] = action.payload.value;
 			state.mapChanged = true;
@@ -505,7 +508,24 @@ const mapStateModule = createSlice({
 				}
 			});
 			state.rangeSelect.copy = copyObject;
-			state.rangeSelect.select = [];
+		},
+		reverseSelect: (state: IEditorState) => {
+			const { select } = state.rangeSelect;
+			if (select.length === 0) {
+				return;
+			}
+			select.forEach(selection => {
+				for (let line = selection.line.start; line <= selection.line.end; line++) {
+					const originState = [...state[state.current].lines[line].status];
+					const newState = [...originState];
+					for (let lane = selection.lane.start; lane <= selection.lane.end; lane++) {
+						newState[lane] = originState[selection.lane.end - lane];
+					}
+					state[state.current].lines[line].status = newState;
+				}
+			});
+			state.mapChanged = true;
+			pushHistory(state[state.current], state[state.current].lines, state.historySize);
 		},
 		pasteSelect: (state: IEditorState, action: PayloadAction<{initialLine: number, initialLane: number}>) => {
 			const { initialLine, initialLane } = action.payload;
@@ -565,6 +585,9 @@ const mapStateModule = createSlice({
 			}
 		},
 		deleteSelected: (state: IEditorState) => {
+			if (state.rangeSelect.select.length === 0) {
+				return;
+			}
 			let changed = false;
 			const willConnect: IChangeNotesStatus[] = [];
 			for (const select of state.rangeSelect.select) {
@@ -600,6 +623,7 @@ const mapStateModule = createSlice({
 				state[state.current].activeTime = searchActiveTime(state[state.current].lines);
 				pushHistory(state[state.current], state[state.current].lines, state.historySize);
 			}
+			state.rangeSelect.select = [];
 		},
 		saveTemporaryNotesOption: (state: IEditorState, action: PayloadAction<number>) => {
 			const { bpm, speed, barLine, barLineState, inBind } = state[state.current].lines[action.payload];

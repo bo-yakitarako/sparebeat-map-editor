@@ -27,7 +27,9 @@ bindShortcuts(
 	[['command+z', 'ctrl+z'], editorModule.actions.undo, true],
 	[['command+y', 'ctrl+y'], editorModule.actions.redo, true],
 	[['command+c', 'ctrl+c'], editorModule.actions.copySelect, true],
-	[['shift'], editorModule.actions.toggleMusic, true]
+	[['command+d', 'ctrl+d'], editorModule.actions.deleteSelected, true],
+	[['command+r', 'ctrl+r'], editorModule.actions.reverseSelect, true],
+	[['e', 'p'], editorModule.actions.toggleMusic, true]
 )(store.dispatch);
 
 export default store;

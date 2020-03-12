@@ -20,6 +20,20 @@ window.addEventListener('load', () => {
 	xhr.send();
 });
 
+const onTouch = () => {
+	document.removeEventListener('touchstart', onTouch);
+	const emptySource = context.createBufferSource();
+	emptySource.start();
+	emptySource.stop();
+};
+window.addEventListener('touchstart', onTouch);
+const eventName = typeof document.ontouchend !== 'undefined' ? 'touchend' : 'mouseup';
+const initAudioContext = () => {
+	document.removeEventListener(eventName, initAudioContext);
+	context.resume();
+};
+window.addEventListener(eventName, initAudioContext);
+
 // export function playMusic(currentTime: number) {
 // 	dom.currentTime = currentTime;
 // 	dom.play();

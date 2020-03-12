@@ -89,6 +89,7 @@ const Start = () => {
 										});
 										dispatch(editorModule.actions.setSongInfo(loader.info));
 										localStorage.removeItem('map');
+										dispatch(editorModule.actions.loadExternalMap());
 										fadeOut();
 									}
 								};
@@ -124,6 +125,7 @@ const Start = () => {
 							<Button text="新規作成" icon={ IconNames.BUILD } onClick={() => {
 								localStorage.removeItem('map');
 								dispatch(editorModule.actions.initializeMap({ bpm, beats }));
+								dispatch(editorModule.actions.loadExternalMap());
 								fadeOut();
 							}} />
 						</div>

@@ -60,6 +60,6 @@ export default class MusicBar {
 			bpmPos += add;
 			add = i < this.bpmChanges.length - 1 ? calcBpmPos(i) : 0;
 		}
-		return this.bpmChanges[i].time + calcTime(pos - bpmPos, this.bpmChanges[i].bpm) + this.startTime / 1000;
+		return this.bpmChanges[i].time + calcTime(pos - bpmPos, this.bpmChanges[i].bpm) + (this.startTime - this.clapDelay) / 1000;
 	}
 }

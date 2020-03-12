@@ -68,22 +68,14 @@ const NotesComponent: React.SFC<INotes> = (props: INotes) => {
 		};
 		const rightClick = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
 			if (editMode === 'select') {
-				ContextMenu.show(<MapContextMenu themeDark={themeDark} rangeSelect={rangeSelect} delete={() => {
-						dispatch(editorModule.actions.deleteSelected());
-						dispatch(editorModule.actions.adoptSelection([]));
-					}}
-					copy={() => {
-						dispatch(editorModule.actions.copySelect());
-						dispatch(editorModule.actions.adoptSelection([]));
-					}}
+				ContextMenu.show(<MapContextMenu themeDark={themeDark} rangeSelect={rangeSelect} delete={() => { dispatch(editorModule.actions.deleteSelected()) }}
+					copy={() => { dispatch(editorModule.actions.copySelect())}}
 					cut={() => {
 						dispatch(editorModule.actions.copySelect());
 						dispatch(editorModule.actions.deleteSelected());
-						dispatch(editorModule.actions.adoptSelection([]));
 					}}
-					paste={() => {
-						dispatch(editorModule.actions.pasteSelect({initialLine: props.lineIndex as number, initialLane: props.index}));
-					}}
+					paste={() => { dispatch(editorModule.actions.pasteSelect({initialLine: props.lineIndex as number, initialLane: props.index})) }}
+					reverse={() => { dispatch(editorModule.actions.reverseSelect()) }}
 				/>, { left: e.clientX, top: e.clientY });
 			} else {
 				if (props.onRightClick) {

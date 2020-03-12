@@ -113,7 +113,10 @@ function App() {
                 <Selector />
             </div>
             <Start />
-            <div style={{ position: 'fixed', width: '100%', height: '100vh', left: 0, top: 0, display: openTest ? 'block' : 'none', zIndex: 15, backgroundColor: 'rgba(0, 0, 0, 0.5)', cursor: 'pointer' }} onClick={() => { dispatch(editorModule.actions.toggleTest()) }} >
+            <div style={{ position: 'fixed', width: '100%', height: '100vh', left: 0, top: 0, display: openTest ? 'block' : 'none', zIndex: 15, backgroundColor: 'rgba(0, 0, 0, 0.5)', cursor: 'pointer' }} onClick={() => {
+                dispatch(editorModule.actions.toggleTest());
+                (document.querySelector('#sparebeat_test') as HTMLDivElement).innerHTML = '';
+            }} >
                 <div id="sparebeat_test" style={{ position: 'absolute', width: 960, height: 640, left: '50%', top: '50%', transform: 'translate(-50%, -50%)', zIndex: 20, }}></div>
             </div>
         </div>
