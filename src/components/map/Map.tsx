@@ -11,7 +11,7 @@ const Map = () => {
 	const dispatch = useDispatch();
 	const { currentTime, editMode, current, playing, startTime } = useSelector((state: AppState) => state);
 	const { lines, currentSection, bpmChanges } = useSelector((state: AppState) => state[state.current]);
-	const { column, sectionLineCount } = useSelector((state: AppState) => state.notesDisplay);
+	const { notesWidth, column, sectionLineCount } = useSelector((state: AppState) => state.notesDisplay);
 	const sections = assignSection(lines, sectionLineCount);
 	const sectionIndexes: number[] = [];
 	const mapStyle: React.CSSProperties = {
@@ -39,10 +39,10 @@ const Map = () => {
 		dispatch(editorModule.actions.moveSection(nextSection < 0 ? 0 : nextSection > sections.length - column ? sections.length - column : nextSection));
 	};
 	const getSectionPos = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-		if (editMode === 'music' && !playing) {
+		if (editMode === 'select' && !playing) {
 			for (let i = 0; i < sectionIndexes.length; i++) {
 				const rect = document.getElementById(`section${i}`)?.getBoundingClientRect();
-				if (rect && rect.left < e.clientX && e.clientX < rect.right && rect.top < e.clientY && e.clientY < rect.bottom) {
+				if (rect && rect.left < e.clientX && e.clientX < rect.right - notesWidth && rect.top < e.clientY && e.clientY < rect.bottom) {
 					const sectionPos = {section: i + currentSection, pos: rect.bottom - e.clientY};
 					dispatch(editorModule.actions.moveBarPos(sectionPos));
 					break;
@@ -63,7 +63,7 @@ const Map = () => {
 		</table>
 	);
 	return (
-		<div style={mapStyle} onClick={getSectionPos} >
+		<div style={mapStyle} onMouseDown={getSectionPos} >
 			<div style={{display: 'inline-block', textAlign: 'left'}}>
 				{sectionIndexes.map((value, index) => <SectionColumn key={value} id={index} sectionIndex={value} halfBeats={sections[value]} />)}
 			</div>

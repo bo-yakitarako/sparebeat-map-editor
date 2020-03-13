@@ -26,6 +26,9 @@ const Start = () => {
 			loadSavedOpen(true);
 		}
 	};
+	window.onbeforeunload = () => {
+		dispatch(editorModule.actions.saveMap());
+	}
 	const fadeOut = () => {
 		startDialogOpen(false);
 		dispatch(editorModule.actions.updateBarPos(0));

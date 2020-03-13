@@ -74,7 +74,7 @@ interface ISaveVolume {
 export type DifficlutySelect = 'easy' | 'normal' | 'hard';
 export type SparebeatTheme = 'default' | 'sunset' | '39';
 export type NotesDisplay = 'notesWidth' | 'column' | 'intervalRatio' | 'aspect';
-export type EditMode = 'add' | 'select' | 'music';
+export type EditMode = 'add' | 'select';
 export type NotesMode = 'normal' | 'attack' | 'longStart' | 'longEnd';
 export type Slider = 'timePosition' | 'playbackRate' | 'musicVolume' | 'clapVolume';
 export interface IEditorState {
@@ -345,10 +345,6 @@ const mapStateModule = createSlice({
 		changeEditModeToSelect: (state: IEditorState) => {
 			state.rangeSelect.select = [];
 			state.editMode = 'select';
-		},
-		changeEditModeToMusic: (state: IEditorState) => {
-			state.rangeSelect.select = [];
-			state.editMode = 'music';
 		},
 		changeNotesMode: (state: IEditorState, action: PayloadAction<NotesMode>) => {
 			state.notesMode = action.payload;

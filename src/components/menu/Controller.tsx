@@ -61,7 +61,6 @@ const Controller = () => {
 			<ButtonGroup fill={true}>
 				<Button disabled={!loaded} icon={IconNames.EDIT} active={loaded && editMode === 'add'} onClick={changeEdit('add')} />
 				<Button disabled={!loaded} icon={IconNames.SELECT} active={loaded && editMode === 'select'} onClick={changeEdit('select')} />
-				<Button disabled={!loaded} icon={IconNames.MUSIC} active={loaded && editMode === 'music'} onClick={changeEdit('music')} />
 			</ButtonGroup>
 			<ButtonGroup fill={true}>
 				<Button active={loaded && notesMode === 'normal'} disabled={!putting || !loaded || editMode !== 'add'}><Notes index={0} status={NotesStatus.NORMAL} width={notesWidth} onClick={changeNotes('normal')} /></Button>

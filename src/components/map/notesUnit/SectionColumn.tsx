@@ -50,7 +50,7 @@ const SectionColumn: React.SFC<ISectionColumn> = (props: ISectionColumn) => {
 	};
 
 	return (
-		<div style={{ position: 'relative', display: 'inline-block', marginLeft: 20, width: `${notesWidth * 5}px`, cursor: editMode === 'music' ? 'pointer' : 'default'}}>
+		<div style={{ position: 'relative', display: 'inline-block', marginLeft: 20, width: `${notesWidth * 5}px`, cursor: editMode === 'select' ? 'pointer' : 'default'}}>
 			<div style={{ position: 'relative', width: '80%', marginBottom: notesWidth / 5, cursor: editMode === 'select' ? 'pointer' : 'default' }}>
 				{props.sectionIndex > 0 ? <Button icon={IconNames.DELETE} minimal={true} style={{ width: notesWidth, height: notesHeignt, }} onClick={() => {
 					dispatch(mapStateModule.actions.removeSection(props.halfBeats));

@@ -18,7 +18,6 @@ sagaMiddleware.run(rootSaga);
 bindShortcuts(
 	[['1', '8'], editorModule.actions.changeEditModeToAdd, true],
 	[['2', '9'], editorModule.actions.changeEditModeToSelect, true],
-	[['3', '0'], editorModule.actions.changeEditModeToMusic, true],
 	[['q', 'i'], editorModule.actions.changeNotesModeToNormal, true],
 	[['w', 'o'], editorModule.actions.changeNotesModeToAttack, true],
 	[['a', 'k'], editorModule.actions.changeNotesModeToLongStart, true],
@@ -29,7 +28,7 @@ bindShortcuts(
 	[['command+c', 'ctrl+c'], editorModule.actions.copySelect, true],
 	[['command+d', 'ctrl+d'], editorModule.actions.deleteSelected, true],
 	[['command+r', 'ctrl+r'], editorModule.actions.reverseSelect, true],
-	[['e', 'p'], editorModule.actions.toggleMusic, true]
+	[['3', '0'], editorModule.actions.toggleMusic, true]
 )(store.dispatch);
 
 export default store;
