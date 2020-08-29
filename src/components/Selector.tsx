@@ -1,23 +1,32 @@
 import * as React from 'react';
+import styled from 'styled-components';
 import { useSelector } from "react-redux";
 import { AppState } from '../store';
 
 const Selector = () => {
 	const { x, y, width, height } = useSelector((state: AppState) => state.selector);
-	const selectorStyle: React.CSSProperties = {
-		display: x > 0 && y > 0 ? 'block' : 'none',
-		position: 'absolute',
-		left: x,
-		top: y,
-		width: width,
-		height: height,
-		border: 'solid 2px rgba(0, 78, 255, 0.4)',
-		background: 'rgba(0, 96, 255, 0.2)',
-		zIndex: 10,
-	};
 	return (
-		<div style={selectorStyle}></div>
+		<SelectorWrapper x={x} y={y} width={width} height={height} />
 	);
 };
 
 export default Selector;
+
+interface ISelectorWrapper {
+	x: number;
+	y: number;
+	width: number;
+	height: number;
+};
+
+const SelectorWrapper = styled.div<ISelectorWrapper>`
+	display: ${({ x, y }) => x > 0 && y > 0 ? 'block' : 'none'};
+	position: absolute;
+	left: ${({ x }) => x}px;
+	top: ${({ y }) => y}px;
+	width: ${({ width }) => width}px;
+	height: ${({ height }) => height}px;
+	border: solid 2px rgba(0, 78, 255, 0.4);
+	background: rgba(0, 96, 255, 0.2);
+	z-index: 10;
+`;
