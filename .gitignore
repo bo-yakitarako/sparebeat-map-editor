@@ -3,7 +3,6 @@
 # dependencies
 /node_modules
 /public/ads.txt
-/public/media
 /.pnp
 /.vscode
 .pnp.js
