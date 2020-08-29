@@ -3,14 +3,12 @@ import styled from 'styled-components';
 import { useSelector } from "react-redux";
 import { AppState } from '../store';
 
-const Selector = () => {
+export const Selector = () => {
 	const { x, y, width, height } = useSelector((state: AppState) => state.selector);
 	return (
 		<SelectorWrapper x={x} y={y} width={width} height={height} />
 	);
 };
-
-export default Selector;
 
 interface ISelectorWrapper {
 	x: number;

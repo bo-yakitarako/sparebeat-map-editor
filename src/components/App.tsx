@@ -8,9 +8,9 @@ import Start from './Start';
 import Menu from './menu/Menu';
 import Controller from './menu/Controller';
 import Map from './map/Map';
-import Selector from './Selector';
+import { Selector } from './Selector';
 
-const App = () => {
+export const App = () => {
     const dispatch = useDispatch();
     const { themeDark, editMode, openTest, notesDisplay, selector, map } = useSelector((state: AppState) => (
         { ...state, map: state[state.current] }
@@ -102,8 +102,6 @@ const App = () => {
         </div>
     );
 };
-
-export default App;
 
 const Main = styled.main<{ themeDark: boolean }>`
     position: 'absolute';
