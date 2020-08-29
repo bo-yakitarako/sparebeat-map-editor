@@ -1,4 +1,5 @@
 import React from 'react';
+import styled from 'styled-components';
 import { Classes } from '@blueprintjs/core';
 import { useSelector, useDispatch } from "react-redux";
 import { AppState } from '../store';
@@ -9,36 +10,23 @@ import Controller from './menu/Controller';
 import Map from './map/Map';
 import Selector from './Selector';
 
-const editorStyle: React.CSSProperties = {
-    display: 'flex',
-    flexDirection: 'row',
-    whiteSpace: 'nowrap',
-    overflowX: 'hidden',
-    maxWidth: '100%',
-    minWidth: '100%',
-    maxHeight: 'calc(100vh - 50px)',
-    minHeight: 'calc(100vh - 50px)',
-    textAlign: 'left',
-}
-
-function App() {
+const App = () => {
     const dispatch = useDispatch();
-    const { themeDark, editMode, openTest } = useSelector((state: AppState) => state);
-    const { lines, currentSection } = useSelector((state: AppState) => state[state.current]);
-    const { column, notesWidth, intervalRatio, aspect, sectionLineCount } = useSelector((state: AppState) => state.notesDisplay);
-    const { baseX, baseY, x, y, width, height } = useSelector((state: AppState) => state.selector);
+    const { themeDark, editMode, openTest, notesDisplay, selector, map } = useSelector((state: AppState) => (
+        { ...state, map: state[state.current] }
+    ));
+    const { lines, currentSection } = map;
+    const { column, notesWidth, intervalRatio, aspect, sectionLineCount } = notesDisplay;
+    const { baseX, baseY, x, y, width, height } = selector;
     const modeSelect = editMode === 'select';
     const notesHeight = notesWidth / aspect;
     const sections = assignSection(lines, sectionLineCount);
     const getLineLocations = (lineIndexes: number[]) => {
-        const locations = [0];
-        let length = 0;
-        for (let i = 1; i < lineIndexes.length; i++) {
-            const line = lines[lineIndexes[i - 1]];
-            length += notesHeight * intervalRatio * (line.snap24 ? 1.0 : 1.5);
-            locations.push(length);
-        }
-        return locations;
+        return lineIndexes.slice(1).reduce((locations, i) => {
+            const line = lines[lineIndexes[i]];
+            const length = locations[locations.length - 1] + notesHeight * intervalRatio * (line.snap24 ? 1.0 : 1.5);
+            return [...locations, length];
+        }, [0]);
     };
     const isSelectIntoSectionRect = (rect: DOMRect | undefined) => {
         if (rect === undefined) {
@@ -81,17 +69,9 @@ function App() {
     };
     return (
         <div className={themeDark ? Classes.DARK : ""}>
-            <div
+            <Main
+                themeDark={themeDark}
                 className={themeDark ? Classes.DARK : ""}
-                style={{
-                    position: 'absolute',
-                    left: 0,
-                    top: 0,
-                    width: "100%",
-                    minHeight: "100vh",
-                    backgroundColor: themeDark ? "#30404D" : "#F5F8FA",
-                    zIndex: 5,
-                }}
                 onMouseDown={e => {
                     if (modeSelect && e.clientX > 200 && e.clientY > 50 && e.button !== 2) {
                         dispatch(editorModule.actions.adoptSelection([]));
@@ -106,21 +86,65 @@ function App() {
                 onMouseUp={dispatchSelect} onMouseLeave={dispatchSelect}
             >
                 <Menu/>
-                <div style={editorStyle}>
+                <Editor>
                     <Controller />
                     <Map />
-                </div>
+                </Editor>
                 <Selector />
-            </div>
+            </Main>
             <Start />
-            <div style={{ position: 'fixed', width: '100%', height: '100vh', left: 0, top: 0, display: openTest ? 'block' : 'none', zIndex: 15, backgroundColor: 'rgba(0, 0, 0, 0.5)', cursor: 'pointer' }} onClick={() => {
+            <TestPlayerWrapper openTest={openTest} onClick={() => {
                 dispatch(editorModule.actions.toggleTest());
                 (document.querySelector('#sparebeat_test') as HTMLDivElement).innerHTML = '';
             }} >
-                <div id="sparebeat_test" style={{ position: 'absolute', width: 960, height: 640, left: '50%', top: '50%', transform: 'translate(-50%, -50%)', zIndex: 20, }}></div>
-            </div>
+                <TestPlayer id="sparebeat_test" />
+            </TestPlayerWrapper>
         </div>
     );
-}
+};
 
 export default App;
+
+const Main = styled.main<{ themeDark: boolean }>`
+    position: 'absolute';
+    left: 0;
+    top: 0;
+    width: "100%";
+    min-height: "100vh";
+    background-color: ${({ themeDark }) => themeDark ? "#30404D" : "#F5F8FA"};
+    z-index: 5;
+`;
+
+const Editor = styled.div`
+    display: none;
+    flex-direction: row;
+    white-space: nowrap;
+    overflow-x: hidden;
+    max-width: 100%;
+    min-width: 100%;
+    max-height: calc(100vh - 50px);
+    min-height: calc(100vh - 50px);
+    text-align: left;
+`;
+
+const TestPlayerWrapper = styled.div<{ openTest: boolean }>`
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    left: 0;
+    top: 0;
+    display: ${({ openTest }) => openTest ? 'block' : 'none'};
+    z-index: 15;
+    background-color: rgba(0, 0, 0, 0.5);
+    cursor: pointer;
+`;
+
+const TestPlayer = styled.div`
+    position: absolute;
+    width: 960;
+    height: 640;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 20;
+`;
