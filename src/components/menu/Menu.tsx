@@ -7,7 +7,7 @@ import { Select, ItemRenderer } from '@blueprintjs/select';
 import editorModule, { DifficlutySelect } from '../../modules/editorModule';
 import music from '../../modules/music/clapModule';
 import SparebeatJsonExport from '../../modules/mapConvert/SparebeatJsonExport';
-import BackgroundColorPicker from './BackgroundColorPicker';
+import { BackgroundColorPicker } from './BackgroundColorPicker';
 import EditorSetting from './EditorSetting';
 
 const menuToast = Toaster.create({
