@@ -4,7 +4,7 @@ import { Classes } from '@blueprintjs/core';
 import { useSelector, useDispatch } from "react-redux";
 import { AppState } from '../store';
 import editorModule, { ISelectRange, getLineIndexesInSection, assignSection } from '../modules/editorModule';
-import Start from './Start';
+import { Start } from './start/Start';
 import Menu from './menu/Menu';
 import Controller from './menu/Controller';
 import Map from './map/Map';
@@ -103,7 +103,7 @@ export const App = () => {
     );
 };
 
-const Main = styled.main<{ themeDark: boolean }>`
+const Main = styled.div<{ themeDark: boolean }>`
     position: 'absolute';
     left: 0;
     top: 0;
@@ -114,7 +114,7 @@ const Main = styled.main<{ themeDark: boolean }>`
 `;
 
 const Editor = styled.div`
-    display: none;
+    display: flex;
     flex-direction: row;
     white-space: nowrap;
     overflow-x: hidden;

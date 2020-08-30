@@ -2,7 +2,7 @@ import ISparebeatJson, { mapUnion } from './ISparebeatJson';
 import { INotesLineState, assignSection, searchActiveTime, getBpmChanges, connectLongNotes } from '../editorModule';
 import { NotesStatus } from '../../components/map/Notes';
 
-export default class SparebeatJsonLoader {
+export class SparebeatJsonLoader {
 	private json: ISparebeatJson;
 
 	constructor(jsonString: string) {
