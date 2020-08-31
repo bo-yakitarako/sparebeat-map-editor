@@ -93,36 +93,36 @@ const BackDrop = styled.div`
 
 const HeaderText = css`
     display: block;
-	color: #fff;
-	text-align: center;
-	font-weight: 700;
-	overflow-x: hidden;
-	overflow-y: visible;
-	margin: 0;
+    color: #fff;
+    text-align: center;
+    font-weight: 700;
+    overflow-x: hidden;
+    overflow-y: visible;
+    margin: 0;
 `;
 
 const Title = styled.p`
     ${HeaderText}
     margin-top: 20px;
-	height: 40px;
-	line-height: 40px;
-	font-size: 21px;
+    height: 40px;
+    line-height: 40px;
+    font-size: 21px;
 `;
 
 const Artist = styled.p`
     ${HeaderText}
     height: 15px;
-	line-height: 15px;
-	font-size: 10px;
+    line-height: 15px;
+    font-size: 10px;
 `;
 
 const LevelSelector = styled.div`
     width: 480px;
-	height: 120px;
-	padding: 10px 0;
-	position: absolute;
-	top: 90px;
-	left: 0;
+    height: 120px;
+    padding: 10px 0;
+    position: absolute;
+    top: 90px;
+    left: 0;
 `;
 
 const difficultyColor = (difficulty: string) => {
@@ -137,10 +137,10 @@ const difficultyColor = (difficulty: string) => {
 };
 const LevelBox = styled.div<{ difficulty: string }>`
     position: relative;
-	float: left;
-	width: 120px;
-	height: 120px;
-	padding: 10px;
+    float: left;
+    width: 120px;
+    height: 120px;
+    padding: 10px;
     margin-left: 30px;
     background-color: hsla(0, 0%, 100%, 0.8);
     color: ${({ difficulty }) => difficultyColor(difficulty)};
@@ -148,7 +148,7 @@ const LevelBox = styled.div<{ difficulty: string }>`
 
 const LevelNumber = styled.div`
     font-family: Russo One, sans-serif;
-	text-align: center;
+    text-align: center;
     font-size: 48px;
 `;
 
@@ -158,34 +158,34 @@ const LevelLabel = styled(LevelNumber)`
 
 const Footer = styled.div`
     width: 480px;
-	height: 90px;
-	line-height: 90px;
-	position: absolute;
-	top: 230px;
-	left: 0;
-	text-align: center;
+    height: 90px;
+    line-height: 90px;
+    position: absolute;
+    top: 230px;
+    left: 0;
+    text-align: center;
 `;
 
 const BpmLabel = styled.span`
     position: relative;
-	display: inline;
-	color: #fff;
-	font-family: Nova Mono, sans-serif;
-	font-size: 12px;
-	font-weight: 700;
+    display: inline;
+    color: #fff;
+    font-family: Nova Mono, sans-serif;
+    font-size: 12px;
+    font-weight: 700;
 `;
 
 const OptionLabel = css`
     width: 240px;
-	height: 90px;
-	line-height: 90px;
-	position: absolute;
-	bottom: 0;
-	color: #fff;
-	text-align: center;
-	font-family: Nova Mono, sans-serif;
-	font-size: 16px;
-	font-weight: 700;
+    height: 90px;
+    line-height: 90px;
+    position: absolute;
+    bottom: 0;
+    color: #fff;
+    text-align: center;
+    font-family: Nova Mono, sans-serif;
+    font-size: 16px;
+    font-weight: 700;
 `;
 
 const StartSpeed = styled.div`
@@ -200,6 +200,6 @@ const StartTiming = styled.div`
 
 const ArrowButton = styled.span`
     margin: 0 7px;
-	padding: 2.5px 7px;
-	background: hsla(0, 0%, 100%, 0.5);
+    padding: 2.5px 7px;
+    background: hsla(0, 0%, 100%, 0.5);
 `;
