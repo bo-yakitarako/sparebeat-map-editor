@@ -19,11 +19,11 @@ export const SparebeatStartMenu: React.FC<{ top: IRgb, bottom: IRgb }> = ({ top,
                 <Title>{title}</Title>
                 <Artist>{artist}</Artist>
                 <LevelSelector>
-                    {Object.keys(level).map((diff) => (
+                    {(Object.keys(level) as DifficlutySelect[]).map((diff) => (
                         <LevelBox key={diff} difficulty={diff}>
                             <LevelLabel>LEVEL</LevelLabel>
                             <LevelNumber>
-                                {level[diff as DifficlutySelect].length === 0 ? '　' : level[diff as DifficlutySelect]}
+                                {level[diff].length === 0 ? '　' : level[diff]}
                             </LevelNumber>
                             <LevelLabel>{diff.toUpperCase()}</LevelLabel>
                         </LevelBox>
@@ -125,7 +125,7 @@ const LevelSelector = styled.div`
     left: 0;
 `;
 
-const difficultyColor = (difficulty: string) => {
+const difficultyColor = (difficulty: DifficlutySelect) => {
     switch (difficulty) {
         case 'easy':
             return '#1abc9c';
@@ -135,7 +135,7 @@ const difficultyColor = (difficulty: string) => {
             return '#c0392b';
     }
 };
-const LevelBox = styled.div<{ difficulty: string }>`
+const LevelBox = styled.div<{ difficulty: DifficlutySelect }>`
     position: relative;
     float: left;
     width: 120px;
