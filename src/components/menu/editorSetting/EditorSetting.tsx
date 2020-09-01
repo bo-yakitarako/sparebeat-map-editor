@@ -8,7 +8,7 @@ import { ColorSetting } from './ColorSetting';
 const DisplaySetting = () => {
 	const dispatch = useDispatch();
 	const { barWidth, notesDisplay: { notesWidth, column, intervalRatio, aspect }, historySize, currentTime, clapDelay } = useSelector((state: AppState) => state);
-	const changeNotesDisplay = (setting: NotesDisplay, min: number) => (num: number, str: string) => {
+	const changeNotesDisplay = (setting: NotesDisplay, min: number) => (num: number) => {
 		dispatch(editorModule.actions.changeNotesDisplay({ setting: setting, value: isNaN(num) ? min : num }));
 	};
 
