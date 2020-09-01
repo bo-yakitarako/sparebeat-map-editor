@@ -1,11 +1,11 @@
 import React from 'react';
 import { useSelector, useDispatch } from "react-redux";
-import { AppState } from '../../store';
-import editorModule, { SparebeatTheme, NotesDisplay } from '../../modules/editorModule';
+import { AppState } from '../../../store';
+import editorModule, { SparebeatTheme, NotesDisplay } from '../../../modules/editorModule';
 import { Tabs, Tab, Switch, Divider, ButtonGroup, Button, NumericInput } from '@blueprintjs/core';
 import { ChromePicker } from 'react-color';
 import { NotesStatus } from 'components/map/Notes';
-import Notes from '../map/Notes';
+import Notes from '../../map/Notes';
 
 const ColorSetting = () => {
 	const dispatch = useDispatch();

@@ -1,7 +1,7 @@
 import React from 'react';
 import styled, { css } from 'styled-components';
 import { useSelector } from 'react-redux';
-import { AppState } from '../../store';
+import { AppState } from '../../../store';
 import { DifficlutySelect } from 'modules/editorModule';
 import { IRgb } from './BackgroundColorPicker';
 

@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { ContextMenu } from '@blueprintjs/core';
 import editorModule from '../../modules/editorModule';
 import { AppState } from '../../store';
-import MapContextMenu from '../menu/MapContextMenu';
+import MapContextMenu from './MapContextMenu';
 const { Rectangle, Polyline } = require('react-shapes');
 
 export enum NotesStatus {

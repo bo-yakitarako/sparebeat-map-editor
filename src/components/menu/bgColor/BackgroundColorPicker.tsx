@@ -2,7 +2,7 @@ import React from 'react';
 import { useSelector, useDispatch } from "react-redux";
 import styled from 'styled-components';
 import { ChromePicker } from 'react-color';
-import { AppState } from '../../store';
+import { AppState } from '../../../store';
 import editorModule from 'modules/editorModule';
 import { SparebeatStartMenu } from './SparebeatStartMenu';
 

@@ -6,7 +6,7 @@ import { AppState } from '../store';
 import editorModule, { ISelectRange, getLineIndexesInSection, assignSection } from '../modules/editorModule';
 import { Start } from './start/Start';
 import Menu from './menu/Menu';
-import Controller from './menu/Controller';
+import Controller from './controller/Controller';
 import Map from './map/Map';
 import { Selector } from './Selector';
 
