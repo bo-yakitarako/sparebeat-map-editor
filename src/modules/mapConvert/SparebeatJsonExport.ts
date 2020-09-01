@@ -1,7 +1,6 @@
 import { AppState } from '../../store';
 import ISparebeatJson, { mapUnion, IMapOption } from './ISparebeatJson';
 import { INotesLineState, isActiveLine } from '../editorModule';
-import { NotesStatus } from '../../components/map/Notes';
 
 export default class SparebeatJsonExport {
 	private state: AppState;
@@ -95,12 +94,12 @@ export default class SparebeatJsonExport {
 			mapText += ']';
 		}
 		lines[index].status.forEach((value, index) => {
-			if (value === NotesStatus.NORMAL) {
+			if (value === 'normal') {
 				mapText += (index + 1);
-			} else if (value === NotesStatus.ATTACK) {
+			} else if (value === 'attack') {
 				mapText += (index + 5);
-			} else if (value < 4) {
-				const lnText = value === NotesStatus.LONG_START ? 'abcd' : 'efgh';
+			} else if (value.includes('long')) {
+				const lnText = value === 'long_start' ? 'abcd' : 'efgh';
 				mapText += lnText[index];
 			}
 		});

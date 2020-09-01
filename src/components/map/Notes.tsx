@@ -6,9 +6,7 @@ import { AppState } from '../../store';
 import MapContextMenu from './MapContextMenu';
 const { Rectangle, Polyline } = require('react-shapes');
 
-export enum NotesStatus {
-	NORMAL, ATTACK, LONG_START, LONG_END, NONE, INVALID
-}
+export type NotesStatus = 'normal' | 'attack' | 'long_start' | 'long_end' | 'none' | 'invalid';
 
 interface INotes {
 	index: number;
@@ -38,7 +36,7 @@ const NotesComponent: React.SFC<INotes> = (props: INotes) => {
 		display: 'inline-block',
 		width: `${props.width}px`,
 		height: `${height}px`,
-		cursor: props.status === NotesStatus.INVALID && editMode !== 'select' ? 'default' : 'pointer',
+		cursor: props.status === 'invalid' && editMode !== 'select' ? 'default' : 'pointer',
 		zIndex: 0,
 	};
 	const barLineStyle: React.CSSProperties = {
@@ -55,11 +53,11 @@ const NotesComponent: React.SFC<INotes> = (props: INotes) => {
 			<Rectangle width={props.width} height={height} fill={{ color: "rgba(255, 255, 255, 0)"}} />
 		</div>
 	);
-	if (props.status !== NotesStatus.INVALID) {
+	if (props.status !== 'invalid') {
 		const strokeWidth = props.width / 25;
 		const points: string[] = [`${strokeWidth},${height / 2}`, `${props.width / 2},${strokeWidth}`, `${props.width - strokeWidth},${height / 2}`, `${props.width / 2},${height - strokeWidth}`]
 		const diamondPointsValue = `${points[0]} ${points[1]} ${points[2]} ${points[3]} ${points[0]} ${points[1]}`;
-		const fillColor = props.status === NotesStatus.ATTACK ? notesColors[sparebeatTheme][4] : props.status === NotesStatus.NONE ? (themeDark ? "#738694" : "#F5F8FA") : notesColors[sparebeatTheme][props.index];
+		const fillColor = props.status === 'attack' ? notesColors[sparebeatTheme][4] : props.status === 'none' ? (themeDark ? "#738694" : "#F5F8FA") : notesColors[sparebeatTheme][props.index];
 		const strokeColor = props.selected ? '#2965CC' : props.inBind ? notesColors.default[4] : (themeDark ? "#BFCCD6" : "#5C7080");
 		const click = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
 			if (props.onClick) {
@@ -83,7 +81,7 @@ const NotesComponent: React.SFC<INotes> = (props: INotes) => {
 				}
 			} 
 		};
-		if (props.status === NotesStatus.LONG_START || props.status === NotesStatus.LONG_END) {
+		if (props.status === 'long_start' || props.status === 'long_end') {
 			const lnTokenStyle: React.CSSProperties = {
 				position: 'absolute',
 				color: notesColors[sparebeatTheme][4],
@@ -93,7 +91,7 @@ const NotesComponent: React.SFC<INotes> = (props: INotes) => {
 				transform: 'translate(-50%, -50%)',
 				zIndex: 2
 			};
-			const tokenText = props.status === NotesStatus.LONG_START ? 'S' : 'E';
+			const tokenText = props.status === 'long_start' ? 'S' : 'E';
 			notes = (
 				<div style={boxStyle} onClick={click} onContextMenu={rightClick} >
 					<Polyline points={diamondPointsValue} fill={{ color: fillColor }} stroke={{ color: strokeColor}} strokeWidth={strokeWidth} />

@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { AppState } from '../../store';
 import { NumericInput, Card, Elevation, Divider, Button, ButtonGroup, Slider } from '@blueprintjs/core';
 import { IconNames } from '@blueprintjs/icons';
-import Notes, { NotesStatus } from '../map/Notes';
+import Notes from '../map/Notes';
 import mapStateModule from '../../modules/editorModule';
 import editorModule, { EditMode, NotesMode, Slider as SliderType } from '../../modules/editorModule';
 import music, { changeClapVolume } from '../../modules/music/clapModule';
@@ -63,12 +63,12 @@ const Controller = () => {
 				<Button disabled={!loaded} icon={IconNames.SELECT} active={loaded && editMode === 'select'} onClick={changeEdit('select')} />
 			</ButtonGroup>
 			<ButtonGroup fill={true}>
-				<Button active={loaded && notesMode === 'normal'} disabled={!putting || !loaded || editMode !== 'add'}><Notes index={0} status={NotesStatus.NORMAL} width={notesWidth} onClick={changeNotes('normal')} /></Button>
-				<Button active={loaded && notesMode === 'attack'} disabled={!putting || !loaded || editMode !== 'add'}><Notes index={0} status={NotesStatus.ATTACK} width={notesWidth} onClick={changeNotes('attack')} /></Button>
+				<Button active={loaded && notesMode === 'normal'} disabled={!putting || !loaded || editMode !== 'add'}><Notes index={0} status="normal" width={notesWidth} onClick={changeNotes('normal')} /></Button>
+				<Button active={loaded && notesMode === 'attack'} disabled={!putting || !loaded || editMode !== 'add'}><Notes index={0} status="attack" width={notesWidth} onClick={changeNotes('attack')} /></Button>
 			</ButtonGroup>
 			<ButtonGroup fill={true}>
-				<Button active={loaded && notesMode === 'longStart'} disabled={!putting || !loaded || editMode !== 'add'}><Notes index={0} status={NotesStatus.LONG_START} width={notesWidth} onClick={changeNotes('longStart')} /></Button>
-				<Button active={loaded && notesMode === 'longEnd'} disabled={!putting || !loaded || editMode !== 'add'}><Notes index={0} status={NotesStatus.LONG_END} width={notesWidth} onClick={changeNotes('longEnd')} /></Button>
+				<Button active={loaded && notesMode === 'longStart'} disabled={!putting || !loaded || editMode !== 'add'}><Notes index={0} status="long_start" width={notesWidth} onClick={changeNotes('longStart')} /></Button>
+				<Button active={loaded && notesMode === 'longEnd'} disabled={!putting || !loaded || editMode !== 'add'}><Notes index={0} status="long_end" width={notesWidth} onClick={changeNotes('longEnd')} /></Button>
 			</ButtonGroup>
 			<Divider />
 				<p>ビートスナップ変更</p>

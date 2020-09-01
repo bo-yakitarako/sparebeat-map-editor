@@ -148,7 +148,7 @@ const setting = localStorage.setting ? JSON.parse(localStorage.setting) as ISave
 const volume = localStorage.volume ? JSON.parse(localStorage.volume) as ISaveVolume : undefined;
 
 const initialBpm = 150;
-const initialNotesStatus = [...Array(4)].map(() => NotesStatus.NONE);
+const initialNotesStatus = [...Array(4)].map(() => 'none' as NotesStatus);
 const initialMapState: IMapState = { snap24: false, currentSection: 0, sectionLength: 1, lines: [], linesHistory: [], historyIndex: 0, bpmChanges: [], activeTime: [] };
 for (let i = 0; i < initialSectionCount; i++) {
 	const lineState: INotesLineState = { status: [...initialNotesStatus], inBind: false, snap24: false, bpm: initialBpm, barLine: i % initialSectionCount === 0, speed: 1.0, barLineState: true };
@@ -464,17 +464,17 @@ const mapStateModule = createSlice({
 			const line = action.payload.lineIndex;
 			const lane = action.payload.laneIndex;
 			const status = state[state.current].lines[line].status[lane];
-			if (action.payload.newStatus === NotesStatus.NONE && (status === NotesStatus.LONG_START || status ===  NotesStatus.LONG_END)) {
+			if (action.payload.newStatus === 'none' && (status === 'long_start' || status ===  'long_end')) {
 				deleteLongNotes(action.payload, state[state.current].lines);
 			} else {
 				state[state.current].lines[line].status[lane] = action.payload.newStatus;
-				if (action.payload.newStatus === NotesStatus.LONG_START || action.payload.newStatus === NotesStatus.LONG_END) {
+				if (action.payload.newStatus === 'long_start' || action.payload.newStatus === 'long_end') {
 					connectLongNotes(action.payload, state[state.current].lines);
-				} else if (action.payload.newStatus === NotesStatus.NONE) {
+				} else if (action.payload.newStatus === 'none') {
 					for (let lineIndex = line - 1; lineIndex >= 0; lineIndex--) {
 						const status = state[state.current].lines[lineIndex].status[lane];
-						if (status !== NotesStatus.NONE) {
-							if (status === NotesStatus.LONG_START) {
+						if (status !== 'none') {
+							if (status === 'long_start') {
 								connectLongNotes({lineIndex: lineIndex, laneIndex: lane, newStatus: status}, state[state.current].lines);
 							}
 							break;
@@ -498,7 +498,7 @@ const mapStateModule = createSlice({
 					const status: {lane: number, status: NotesStatus}[] = [];
 					for (let lane = select.lane.start; lane <= select.lane.end; lane++) {
 						const laneStatus = state[state.current].lines[line].status[lane];
-						status.push({lane: lane - select.lane.start, status: laneStatus === NotesStatus.INVALID ? NotesStatus.NONE : laneStatus});
+						status.push({lane: lane - select.lane.start, status: laneStatus === 'invalid' ? 'none' : laneStatus});
 					}
 					copyObject.push({sectionIndex: index, lineIndex: line - firstIndex, object: status});
 				}
@@ -537,7 +537,7 @@ const mapStateModule = createSlice({
 				for (let lane = initialLane; lane < 4 && lane < copy.object[copy.object.length - 1].lane + initialLane; lane++) {
 					for (let line = copy.lineIndex + initialLine + dir; line >= 0 && line < state[state.current].lines.length; line += dir) {
 						const status = state[state.current].lines[line].status[lane];
-						if ((dir < 0 && status === NotesStatus.LONG_START) || (dir > 0 && status === NotesStatus.LONG_END)) {
+						if ((dir < 0 && status === 'long_start') || (dir > 0 && status === 'long_end')) {
 							willConnect.push({ lineIndex: line, laneIndex: lane, newStatus: status });
 							break;
 						}
@@ -558,7 +558,7 @@ const mapStateModule = createSlice({
 					const newStatus = current.object[lane - firstLane].status;
 					if (state[state.current].lines[current.lineIndex + initialLine].status[lane] !== newStatus) {
 						state[state.current].lines[current.lineIndex + initialLine].status[lane] = newStatus;
-						if (newStatus === NotesStatus.LONG_END) {
+						if (newStatus === 'long_end') {
 							connectLongNotes({ lineIndex: current.lineIndex + initialLine, laneIndex: lane, newStatus: newStatus }, state[state.current].lines);
 						}
 						changed = true;
@@ -568,7 +568,7 @@ const mapStateModule = createSlice({
 			if (changed && willConnect.length > 0) {
 				willConnect.forEach((value) => {
 					deleteLongNotes(value, state[state.current].lines);
-					if (state[state.current].lines[value.lineIndex].status[value.laneIndex] === NotesStatus.NONE) {
+					if (state[state.current].lines[value.lineIndex].status[value.laneIndex] === 'none') {
 						state[state.current].lines[value.lineIndex].status[value.laneIndex] = value.newStatus;
 					}
 					connectLongNotes(value, state[state.current].lines);
@@ -590,19 +590,19 @@ const mapStateModule = createSlice({
 				for (let line = select.line.start; line <= select.line.end; line++) {
 					for (let lane = select.lane.start; lane <= select.lane.end; lane++) {
 						const status = state[state.current].lines[line].status[lane];
-						if (status < 2) {
-							state[state.current].lines[line].status[lane] = NotesStatus.NONE;
+						if (status === 'normal' || status === 'attack') {
+							state[state.current].lines[line].status[lane] = 'none';
 							changed = true;
-						} else if (status < 4) {
-							deleteLongNotes({lineIndex: line, laneIndex: lane, newStatus: NotesStatus.NONE}, state[state.current].lines);
+						} else if (status.includes('long')) {
+							deleteLongNotes({lineIndex: line, laneIndex: lane, newStatus: 'none'}, state[state.current].lines);
 							changed = true;
 						}
 						if (line === select.line.start) {
 							const dir = line === select.line.start ? -1: 1;
 							for (let index = line + dir; index >= 0 && index < state[state.current].lines.length; index += dir) {
 								const status = state[state.current].lines[index].status[lane];
-								if ((dir < 0 && status === NotesStatus.LONG_START) || (dir > 0 && status === NotesStatus.LONG_END)) {
-									willConnect.push({lineIndex: index, laneIndex: lane, newStatus: dir < 0 ? NotesStatus.LONG_START : NotesStatus.LONG_END});
+								if ((dir < 0 && status === 'long_start') || (dir > 0 && status === 'long_end')) {
+									willConnect.push({lineIndex: index, laneIndex: lane, newStatus: dir < 0 ? 'long_start' : 'long_end'});
 								}
 							}
 						}
@@ -640,7 +640,7 @@ const mapStateModule = createSlice({
 			const { snap24, lines, currentSection, sectionLength } = state[state.current];
 			const insertLine = lines[action.payload.insertIndex];
 			const notesStatus = [...Array(4)].map((value, index) => {
-				return lines[action.payload.insertIndex].status[index] === NotesStatus.INVALID ? NotesStatus.INVALID : NotesStatus.NONE;
+				return lines[action.payload.insertIndex].status[index] === 'invalid' ? 'invalid' : 'none';
 			});
 			for (let i = 0; i < sectionLineCount * (snap24 ? 1.5 : 1); i++) {
 				const addLine: INotesLineState = { status: [...notesStatus], snap24: snap24, inBind: insertLine.inBind, bpm: insertLine.bpm, speed: insertLine.speed, barLine: i === 0, barLineState: insertLine.barLineState };
@@ -746,7 +746,7 @@ export default mapStateModule;
 
 export function isActiveLine(line: INotesLineState) {
 	for (const notes of line.status) {
-		if (notes < 4) {
+		if (notes !== 'none' && notes !== 'invalid') {
 			return true;
 		}
 	}
@@ -771,7 +771,7 @@ function changeBeatSnap(mapState: IMapState, startIndex: number) {
 			if (!isActiveLine(mapState.lines[index + 1]) && !barLine) {
 				mapState.lines[index].snap24 = mapState.lines[index + 1].snap24 = true;
 				const newLine: INotesLineState = {
-					status: mapState.lines[index + 1].status.map((value) => value === NotesStatus.INVALID ? NotesStatus.INVALID : NotesStatus.NONE),
+					status: mapState.lines[index + 1].status.map((value) => value === 'invalid' ? 'invalid' : 'none'),
 					snap24: true,
 					inBind: mapState.lines[index + 1].inBind,
 					bpm: mapState.lines[index + 1].bpm,
@@ -851,9 +851,9 @@ function removeSection(state: IMapState, halfBeats: number[][]) {
 	const endIndex = halfBeats.reverse()[0].reverse()[0];
 	for (let line = startIndex; line <= endIndex; line++) {
 		state.lines[line].status.forEach((value, lane) => {
-			if (value < 2) {
-				state.lines[line].status[lane] = NotesStatus.NONE;
-			} else if (value < 4) {
+			if (value === 'normal' || value === 'attack') {
+				state.lines[line].status[lane] = 'none';
+			} else if (value.includes('long')) {
 				deleteLongNotes({lineIndex: line, laneIndex: lane, newStatus: value}, state.lines);
 			}
 		});
@@ -865,7 +865,7 @@ export function searchActiveTime(lines: INotesLineState[]) {
 	let time = 0;
 	const activeTime: { count: number, time: number }[] = [];
 	for (const lineState of lines) {
-		const count = lineState.status.reduce((pre, cur) => pre + (cur < 4 ? 1 : 0), 0);
+		const count = lineState.status.reduce((pre, cur) => pre + (cur !== 'none' && cur !== 'invalid' ? 1 : 0), 0);
 		if (count > 0) {
 			activeTime.push({ count: count, time: time });
 		}
@@ -890,7 +890,7 @@ export function getBpmChanges(lines: INotesLineState[]) {
 function turnInvalid(lane: number, edge1: number, edge2: number, lines: INotesLineState[]) {
 	const last = edge1 < edge2 ? edge2 : edge1;
 	for (let line = (edge1 < edge2 ? edge1 : edge2) + 1; line < last; line++) {
-		lines[line].status[lane] = NotesStatus.INVALID;
+		lines[line].status[lane] = 'invalid';
 	}
 };
 
@@ -900,32 +900,32 @@ function findLnEdgeAndTurnInvalid(connectTarget: NotesStatus, lineIndex: number,
 		if (status === connectTarget) {
 			turnInvalid(laneIndex, lineIndex, index, lines);
 			break;
-		} else if (status !== NotesStatus.NONE) {
+		} else if (status !== 'none') {
 			break;
 		}
 	}
 };
 
 export function connectLongNotes(change: IChangeNotesStatus, lines: INotesLineState[]) {
-	const connectTarget = change.newStatus === NotesStatus.LONG_START ? NotesStatus.LONG_END : NotesStatus.LONG_START;
-	const dir = change.newStatus === NotesStatus.LONG_START ? 1 : -1;
+	const connectTarget = change.newStatus === 'long_start' ? 'long_end' : 'long_start';
+	const dir = change.newStatus === 'long_start' ? 1 : -1;
 	findLnEdgeAndTurnInvalid(connectTarget, change.lineIndex, change.laneIndex, lines, dir);
 }
 
 function deleteLongNotes(change: IChangeNotesStatus, lines: INotesLineState[]) {
 	const currentStatus = lines[change.lineIndex].status[change.laneIndex];
 	const newLnPossibility = 0 < change.lineIndex && change.lineIndex < lines.length - 1 && (
-		(currentStatus === NotesStatus.LONG_START && lines[change.lineIndex + 1].status[change.laneIndex] === NotesStatus.INVALID) || 
-		(currentStatus === NotesStatus.LONG_END && lines[change.lineIndex - 1].status[change.laneIndex] === NotesStatus.INVALID)
+		(currentStatus === 'long_start' && lines[change.lineIndex + 1].status[change.laneIndex] === 'invalid') || 
+		(currentStatus === 'long_end' && lines[change.lineIndex - 1].status[change.laneIndex] === 'invalid')
 	);
-	const dir = newLnPossibility ? (currentStatus === NotesStatus.LONG_START ? -1 : 1) : undefined;
-	lines[change.lineIndex].status[change.laneIndex] = NotesStatus.NONE;
+	const dir = newLnPossibility ? (currentStatus === 'long_start' ? -1 : 1) : undefined;
+	lines[change.lineIndex].status[change.laneIndex] = 'none';
 	if (dir) {
 		const removeDir = dir < 0 ? 1 : -1;
 		findLnEdgeAndTurnInvalid(currentStatus, change.lineIndex + removeDir, change.laneIndex, lines, dir);
-		if (lines[change.lineIndex].status[change.laneIndex] === NotesStatus.NONE) {
-			for (let i = change.lineIndex + removeDir; lines[i].status[change.laneIndex] === NotesStatus.INVALID; i += removeDir) {
-				lines[i].status[change.laneIndex] = NotesStatus.NONE;
+		if (lines[change.lineIndex].status[change.laneIndex] === 'none') {
+			for (let i = change.lineIndex + removeDir; lines[i].status[change.laneIndex] === 'invalid'; i += removeDir) {
+				lines[i].status[change.laneIndex] = 'none';
 			}
 		}
 	}

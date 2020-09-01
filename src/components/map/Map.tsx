@@ -5,7 +5,6 @@ import SectionColumn from './notesUnit/SectionColumn';
 import { Button, Icon, Tooltip } from '@blueprintjs/core';
 import { IconNames } from '@blueprintjs/icons';
 import editorModule, { assignSection, INotesLineState } from '../../modules/editorModule';
-import { NotesStatus } from './Notes';
 
 const Map = () => {
 	const dispatch = useDispatch();
@@ -107,8 +106,8 @@ function countNotes(lines: INotesLineState[]) {
 		const { notes, attack } = pre;
 		const { curNotes, curAttack } = cur.status.reduce((pre, cur) => {
 			const { curNotes, curAttack } = pre;
-			const nextNotes = curNotes + (cur < 4 ? 1 : 0);
-			const nextAttack = curAttack + (cur === NotesStatus.ATTACK ? 1 : 0);
+			const nextNotes = curNotes + (cur !== 'none' && cur !== 'invalid' ? 1 : 0);
+			const nextAttack = curAttack + (cur === 'attack' ? 1 : 0);
 			return { curNotes: nextNotes, curAttack: nextAttack };
 		}, {curNotes: 0, curAttack: 0});
 		return { notes: notes + curNotes, attack: attack + curAttack };

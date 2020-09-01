@@ -85,7 +85,7 @@ export class SparebeatJsonLoader {
 			while (lines.length < addFirstIndex + max) {
 				lines.push(Object.assign({}, lines[lastIndex], {
 					barLine: false,
-					status: [...Array(4)].map(() => NotesStatus.NONE),
+					status: [...Array(4)].map(() => 'none'),
 				}));
 			}
 		}
@@ -116,7 +116,7 @@ export class SparebeatJsonLoader {
 				barLineState: barLineState,
 			});
 			status.forEach((value, index) => {
-				if (value === NotesStatus.LONG_END) {
+				if (value === 'long_end') {
 					connectLongNotes({lineIndex: lines.length - 1, laneIndex: index, newStatus: value}, lines);
 				}
 			});
@@ -125,56 +125,56 @@ export class SparebeatJsonLoader {
 	}
 
 	private static convertMapStringToNotesStatus(mapString: string) {
-		const status: NotesStatus[] = [NotesStatus.NONE, NotesStatus.NONE, NotesStatus.NONE, NotesStatus.NONE];
+		const status: NotesStatus[] = ['none', 'none', 'none', 'none'];
 		mapString.split('').forEach((notesString) => {
 			switch (notesString) {
 				case '1':
-					status[0] = NotesStatus.NORMAL;
+					status[0] = 'normal';
 					break;
 				case '2':
-					status[1] = NotesStatus.NORMAL;
+					status[1] = 'normal';
 					break;
 				case '3':
-					status[2] = NotesStatus.NORMAL;
+					status[2] = 'normal';
 					break;
 				case '4':
-					status[3] = NotesStatus.NORMAL;
+					status[3] = 'normal';
 					break;
 				case '5':
-					status[0] = NotesStatus.ATTACK;
+					status[0] = 'attack';
 					break;
 				case '6':
-					status[1] = NotesStatus.ATTACK;
+					status[1] = 'attack';
 					break;
 				case '7':
-					status[2] = NotesStatus.ATTACK;
+					status[2] = 'attack';
 					break;
 				case '8':
-					status[3] = NotesStatus.ATTACK;
+					status[3] = 'attack';
 					break;
 				case 'a':
-					status[0] = NotesStatus.LONG_START;
+					status[0] = 'long_start';
 					break;
 				case 'b':
-					status[1] = NotesStatus.LONG_START;
+					status[1] = 'long_start';
 					break;
 				case 'c':
-					status[2] = NotesStatus.LONG_START;
+					status[2] = 'long_start';
 					break;
 				case 'd':
-					status[3] = NotesStatus.LONG_START;
+					status[3] = 'long_start';
 					break;
 				case 'e':
-					status[0] = NotesStatus.LONG_END;
+					status[0] = 'long_end';
 					break;
 				case 'f':
-					status[1] = NotesStatus.LONG_END;
+					status[1] = 'long_end';
 					break;
 				case 'g':
-					status[2] = NotesStatus.LONG_END;
+					status[2] = 'long_end';
 					break;
 				case 'h':
-					status[3] = NotesStatus.LONG_END;
+					status[3] = 'long_end';
 					break;
 			}
 		});

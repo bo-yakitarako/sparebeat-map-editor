@@ -77,10 +77,10 @@ const Line: React.SFC<ILine> = (props: ILine) => {
 		</div>
 	);
 	const convertNotesStatus = (addNotes: NotesMode) => {
-		return addNotes === 'normal' ? NotesStatus.NORMAL :
-				addNotes === 'attack' ? NotesStatus.ATTACK :
-					addNotes === 'longStart' ? NotesStatus.LONG_START :
-						NotesStatus.LONG_END;
+		return addNotes === 'normal' ? 'normal' :
+				addNotes === 'attack' ? 'attack' :
+					addNotes === 'longStart' ? 'long_start' :
+						'long_end';
 	}
 	const changeNotes = (index: number) => (e: React.MouseEvent<HTMLElement, MouseEvent>) => {
 		const notesStatus = convertNotesStatus(notesMode);
@@ -94,8 +94,9 @@ const Line: React.SFC<ILine> = (props: ILine) => {
 		}
 	};
 	const changeNotesOnRightClick = (index: number) => (e: React.MouseEvent<HTMLElement, MouseEvent>) => {
-		if (editMode === 'add' && currentLine.status[index] < 4) {
-			dispatch(editorModule.actions.changeNotesStatus({lineIndex: props.lineIndex, laneIndex: index, newStatus: NotesStatus.NONE}));
+		const status = currentLine.status[index];
+		if (editMode === 'add' && status !== 'none' && status !== 'invalid') {
+			dispatch(editorModule.actions.changeNotesStatus({lineIndex: props.lineIndex, laneIndex: index, newStatus: 'none'}));
 		}
 	};
 	const inputStyle: React.CSSProperties = {
