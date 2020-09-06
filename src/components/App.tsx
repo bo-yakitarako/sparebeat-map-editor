@@ -68,7 +68,7 @@ export const App = () => {
         }
     };
     return (
-        <div className={themeDark ? Classes.DARK : ""}>
+        <Wrapper className={themeDark ? Classes.DARK : ""} onContextMenu={() => false}>
             <Main
                 themeDark={themeDark}
                 className={themeDark ? Classes.DARK : ""}
@@ -99,9 +99,18 @@ export const App = () => {
             }} >
                 <TestPlayer id="sparebeat_test" />
             </TestPlayerWrapper>
-        </div>
+        </Wrapper>
     );
 };
+
+const Wrapper = styled.div`
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -khtml-user-select: none;
+    -webkit-user-drag: none;
+    -khtml-user-drag: none;
+`;
 
 const Main = styled.div<{ themeDark: boolean }>`
     position: 'absolute';

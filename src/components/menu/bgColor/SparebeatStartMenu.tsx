@@ -54,6 +54,12 @@ const Wrapper = styled.div`
     width: 480px;
     height: 320px;
     margin-top: 15px;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -khtml-user-select: none;
+    -webkit-user-drag: none;
+    -khtml-user-drag: none;
 `;
 
 const BackgroundImage = styled.img`
