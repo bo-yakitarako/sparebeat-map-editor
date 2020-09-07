@@ -22,11 +22,10 @@ export const App = () => {
     const notesHeight = notesWidth / aspect;
     const sections = assignSection(lines, sectionLineCount);
     const getLineLocations = (lineIndexes: number[]) => {
-        return lineIndexes.slice(1).reduce((locations, i) => {
-            const line = lines[lineIndexes[i]];
-            const length = locations[locations.length - 1] + notesHeight * intervalRatio * (line.snap24 ? 1.0 : 1.5);
-            return [...locations, length];
-        }, [0]);
+        return lineIndexes.slice(1).reduce((locations, i) => ([
+                ...locations,
+                locations[locations.length - 1] + notesHeight * intervalRatio * (lines[i].snap24 ? 1.0 : 1.5),
+        ]), [0]);
     };
     const isSelectIntoSectionRect = (rect: DOMRect | undefined) => {
         if (rect === undefined) {
