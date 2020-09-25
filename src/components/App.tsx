@@ -42,8 +42,8 @@ export const App = () => {
             const lineLocations = getLineLocations(lineIndexes);
             const laneStartArray = [0, 1, 2, 3].filter((value) => x < rect.left + notesWidth * value);
             const laneEndArray = [3, 2, 1, 0].filter((value) => x + width > rect.left + notesWidth * (value + 1));
-            const lineStartArray = lineIndexes.filter((value, index) => rect.bottom - lineLocations[index] < y + height);
-            const lineEndArray = lineIndexes.filter((value, index) => rect.bottom - lineLocations[index] - notesHeight > y);
+            const lineStartArray = lineIndexes.filter((value, i) => rect.bottom - lineLocations[i] < y + height);
+            const lineEndArray = lineIndexes.filter((value, i) => rect.bottom - lineLocations[i] - notesHeight > y);
             return {
                 lane: {
                     start: laneStartArray[0], end: laneEndArray[0],

@@ -77,7 +77,7 @@ export const DisplaySetting = () => {
             method: (num: number) => {
                 dispatch(changeClapDelay(isNaN(num) ? 0 : num));
             },
-        }
+        },
     ];
     return (
         <Wrapper>

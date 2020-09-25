@@ -19,7 +19,7 @@ export const ColorSetting = () => {
         themeDark,
         sparebeatTheme,
         barColor,
-        notesDisplay: { aspect }
+        notesDisplay: { aspect },
     } = useSelector((state: AppState) => state);
     const changeSparebeatTheme = (theme: SparebeatTheme) => () => {
         if (theme !== sparebeatTheme) {

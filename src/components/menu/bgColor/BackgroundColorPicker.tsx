@@ -13,6 +13,7 @@ export interface IRgb {
 };
 
 const { updateBgColor } = editorModule.actions;
+
 export const BackgroundColorPicker = () => {
     const dispatch = useDispatch();
     const { top, bottom } = useSelector(({ info: { bgColor } }: AppState) => parseBackgroundRGB(bgColor));
