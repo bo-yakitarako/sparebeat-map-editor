@@ -5,7 +5,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { AppState } from '../store';
 import editorModule, { ISelectRange, getLineIndexesInSection, assignSection } from '../modules/editorModule';
 import { Start } from './start/Start';
-import Menu from './menu/Menu';
+import { Menu } from './menu/Menu';
 import Controller from './controller/Controller';
 import Map from './map/Map';
 import { Selector } from './Selector';
