@@ -9,10 +9,11 @@ import { Menu } from './menu/Menu';
 import Controller from './controller/Controller';
 import Map from './map/Map';
 import { Selector } from './Selector';
+import { TestPlayer } from './TestPlayer';
 
 export const App = () => {
     const dispatch = useDispatch();
-    const { themeDark, editMode, openTest, notesDisplay, selector, map } = useSelector((state: AppState) => (
+    const { themeDark, editMode, notesDisplay, selector, map } = useSelector((state: AppState) => (
         { ...state, map: state[state.current] }
     ));
     const { lines, currentSection } = map;
@@ -92,12 +93,7 @@ export const App = () => {
                 <Selector />
             </Main>
             <Start />
-            <TestPlayerWrapper openTest={openTest} onClick={() => {
-                dispatch(editorModule.actions.toggleTest());
-                (document.querySelector('#sparebeat_test') as HTMLDivElement).innerHTML = '';
-            }} >
-                <TestPlayer id="sparebeat_test" />
-            </TestPlayerWrapper>
+            <TestPlayer />
         </Wrapper>
     );
 };
@@ -131,26 +127,4 @@ const Editor = styled.div`
     max-height: calc(100vh - 50px);
     min-height: calc(100vh - 50px);
     text-align: left;
-`;
-
-const TestPlayerWrapper = styled.div<{ openTest: boolean }>`
-    position: fixed;
-    width: 100%;
-    height: 100%;
-    left: 0;
-    top: 0;
-    display: ${({ openTest }) => openTest ? 'block' : 'none'};
-    z-index: 15;
-    background-color: rgba(0, 0, 0, 0.5);
-    cursor: pointer;
-`;
-
-const TestPlayer = styled.div`
-    position: absolute;
-    width: 960;
-    height: 640;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 20;
 `;

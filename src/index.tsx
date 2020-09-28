@@ -9,6 +9,13 @@ import { App } from './components/App';
 import * as serviceWorker from './serviceWorker';
 import './style.css';
 
+declare global {
+	const Sparebeat: {
+		load: (mapPath: string, musicPath: string) => void;
+		autoload: () => void;
+	};
+}
+
 ReactDOM.render(
 	<Provider store={store}>
 		<App />

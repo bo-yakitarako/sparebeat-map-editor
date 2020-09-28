@@ -5,7 +5,6 @@ import { AppState } from '../../store';
 import { Button, Navbar, NavbarDivider, NavbarGroup, NavbarHeading, Tooltip, Alignment, Classes, Toaster, Position, Intent, Dialog, AnchorButton } from '@blueprintjs/core';
 import { IconNames } from '@blueprintjs/icons';
 import editorModule from '../../modules/editorModule';
-import music from '../../modules/music/clapModule';
 import SparebeatJsonExport from '../../modules/mapConvert/SparebeatJsonExport';
 import { BackgroundColorPicker } from './bgColor/BackgroundColorPicker';
 import { EditorSetting } from './editorSetting/EditorSetting';
@@ -14,6 +13,7 @@ import { DifficultyDialog } from './dialog/DifficultyDialog';
 
 const {
     saveSetting,
+    toggleTest,
 } = editorModule.actions;
 
 const menuToast = Toaster.create({
@@ -127,16 +127,7 @@ export const Menu = () => {
                         className={Classes.MINIMAL}
                         icon={IconNames.DESKTOP}
                         large
-                        onClick={() => {
-                            const testDOM = document.querySelector('#sparebeat_test') as HTMLDivElement;
-                            testDOM.innerHTML = '<iframe id="sparebeat" width="960" height="640" src="https://sparebeat.com/embed/" frameborder="0"></iframe>';
-                            const encodeBase64 = (str: string) => window.btoa(unescape(encodeURIComponent(str)));
-                            const dataUrl = 'data:application/json;base64,' + encodeBase64(JSON.stringify(mapJson));
-                            const script = document.createElement('script');
-                            script.innerHTML = `Sparebeat.load('${dataUrl}', '${music.src}')`;
-                            testDOM.appendChild(script);
-                            dispatch(editorModule.actions.toggleTest());
-                        }}
+                        onClick={() => dispatch(toggleTest())}
                     />
                 </Tooltip>
                 <Tooltip disabled={!loaded} content="譜面ファイルをクリップボードにコピー、サイトに保存">
