@@ -9,6 +9,7 @@ import { Select, ItemRenderer } from '@blueprintjs/select';
 
 const {
     saveSetting,
+    toggleMusic,
     changeDifficulty,
     updateCurrentTime,
     updateBarPos,
@@ -111,24 +112,25 @@ const CloneSelector: React.FC<ICloneSelector> = ({
     );
 };
 
-export const DifficultyDialog: React.FC<Props> = ({ isOpen, setState }) => {
+export const DifficultyDialog: React.FC<Props> = ({ isOpen, handleState }) => {
     const dispatch = useDispatch();
-    const { themeDark } = useSelector((state: AppState) => state);
+    const { themeDark, playing } = useSelector((state: AppState) => state);
 
     const [origin, changeOrigin] = useState('easy' as DifficlutySelect);
     const [target, changeTarget] = useState('normal' as DifficlutySelect);
-
-    const handleClose = useCallback(() => {
-        dispatch(saveSetting());
-        setState(() => false);
-    }, [dispatch, setState]);
 
     return (
         <Dialog
             className={themeDark ? Classes.DARK : ''}
             isOpen={isOpen}
             title="難易度変更"
-            onClose={handleClose}
+            onClose={handleState}
+            onOpened={() => {
+                dispatch(saveSetting());
+                if (playing) {
+                    dispatch(toggleMusic());
+                }
+            }}
         >
             <DialogBody className={Classes.DIALOG_BODY}>
                 <WindowWrapper>

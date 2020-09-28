@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React from 'react';
 import styled from 'styled-components';
 import { useDispatch, useSelector } from 'react-redux';
 import { Dialog, InputGroup, Classes } from '@blueprintjs/core';
@@ -14,21 +14,18 @@ export type Props = IDialogFooter & {
     isOpen: boolean;
 };
 
-export const SongInfoDialog: React.FC<Props> = ({ setState, isOpen }) => {
+export const SongInfoDialog: React.FC<Props> = ({ handleState, isOpen }) => {
     const dispatch = useDispatch();
     const {
         themeDark,
         info: { title, artist, url },
     } = useSelector((state: AppState) => state);
-    const handleClose = useCallback(() => {
-        setState(() => false);
-    }, [setState]);
     return (
         <Dialog
             className={themeDark ? Classes.DARK : ''}
             isOpen={isOpen}
             title="曲情報の編集"
-            onClose={handleClose}
+            onClose={handleState}
         >
             <div className={Classes.DIALOG_BODY}>
                 <Input
@@ -65,7 +62,7 @@ export const SongInfoDialog: React.FC<Props> = ({ setState, isOpen }) => {
                     }}
                 />
             </div>
-            <DialogFooter setState={setState} />
+            <DialogFooter handleState={handleState} />
         </Dialog>
     );
 };
