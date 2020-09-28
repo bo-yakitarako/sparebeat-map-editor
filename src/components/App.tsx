@@ -13,7 +13,7 @@ import { TestPlayer } from './TestPlayer';
 
 export const App = () => {
     const dispatch = useDispatch();
-    const { themeDark, editMode, notesDisplay, selector, map } = useSelector((state: AppState) => (
+    const { themeDark, editMode, notesDisplay, openTest, selector, map } = useSelector((state: AppState) => (
         { ...state, map: state[state.current] }
     ));
     const { lines, currentSection } = map;
@@ -93,7 +93,7 @@ export const App = () => {
                 <Selector />
             </Main>
             <Start />
-            <TestPlayer />
+            {openTest && <TestPlayer />}
         </Wrapper>
     );
 };

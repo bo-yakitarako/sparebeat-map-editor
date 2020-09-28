@@ -12,23 +12,19 @@ const {
 
 export const TestPlayer = () => {
     const dispatch = useDispatch();
-    const { openTest, mapJson } = useSelector((state: AppState) => ({
-        openTest: state.openTest,
-        mapJson: new SparebeatJsonExport(state),
-    }));
+    const mapJson = useSelector((state: AppState) =>
+        new SparebeatJsonExport(state).export()
+    );
 
     useEffect(() => {
         const dataUrl = `data:application/json;base64,${
             window.btoa(unescape(encodeURIComponent(JSON.stringify(mapJson))))
         }`;
         Sparebeat.load(dataUrl, music.src);
-    }, [openTest, mapJson]);
+    }, [mapJson]);
 
     return (
-        <Overlay
-            openTest={openTest}
-            onClick={() => dispatch(toggleTest())}
-        >
+        <Overlay onClick={() => dispatch(toggleTest())}>
             <TestPlayerWrapper>
                 <iframe
                     title="sparebeat_test"
@@ -43,13 +39,12 @@ export const TestPlayer = () => {
     )
 };
 
-const Overlay = styled.div<{ openTest: boolean }>`
+const Overlay = styled.div`
     position: fixed;
     width: 100%;
     height: 100%;
     left: 0;
     top: 0;
-    display: ${({ openTest }) => openTest ? 'block' : 'none'};
     z-index: 15;
     background-color: rgba(0, 0, 0, 0.5);
     cursor: pointer;
