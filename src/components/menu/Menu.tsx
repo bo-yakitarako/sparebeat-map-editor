@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { useSelector, useDispatch } from "react-redux";
 import styled from 'styled-components';
 import { AppState } from '../../store';
-import { Button, Navbar, NavbarDivider, NavbarGroup, NavbarHeading, Tooltip, Alignment, Classes, Toaster, Position, Intent, Dialog, AnchorButton } from '@blueprintjs/core';
+import { Button, Navbar, NavbarDivider, NavbarGroup, NavbarHeading, Tooltip, Alignment, Classes, Toaster, Position, Dialog, AnchorButton } from '@blueprintjs/core';
 import { IconNames } from '@blueprintjs/icons';
 import editorModule from '../../modules/editorModule';
 import SparebeatJsonExport from '../../modules/mapConvert/SparebeatJsonExport';
@@ -14,6 +14,7 @@ import { DifficultyDialog } from './dialog/DifficultyDialog';
 const {
     saveSetting,
     toggleTest,
+    saveMap,
 } = editorModule.actions;
 
 const menuToast = Toaster.create({
@@ -58,9 +59,50 @@ export const Menu = () => {
         settingOpen((pre) => !pre);
     }, [settingOpen]);
 
-    const { themeDark, loaded, mapChanged } = useSelector((state: AppState) => state);
-    const { title } = useSelector((state: AppState) => state.info);
-    const mapJson = useSelector((state: AppState) => new SparebeatJsonExport(state).export());
+    const {
+        themeDark,
+        loaded,
+        mapChanged,
+        info: { title },
+        mapJson,
+    } = useSelector((state: AppState) => ({
+        ...state,
+        mapJson: new SparebeatJsonExport(state).export(),
+    }));
+
+    const copyAndSave = () => {
+        dispatch(saveMap());
+        const listener = (e: ClipboardEvent) => {
+            if (e.clipboardData) {
+                const text = JSON.stringify(mapJson, null, '\t');
+                e.clipboardData.setData('text/plain', text);
+                menuToast.show({
+                    message: 'クリップボードにコピー、保存しました',
+                    intent: 'primary',
+                    timeout: 2000,
+                });
+            }
+            e.preventDefault();
+            document.removeEventListener("copy", listener);
+        }
+        document.addEventListener("copy", listener);
+        document.execCommand("copy");
+    };
+
+    const download = () => {
+        const downLoadLink = document.createElement('a');
+        downLoadLink.download = 'map.json';
+        const text = JSON.stringify(mapJson, null, '\t');
+        const urlObject = new Blob([text], { type: "text.plain" });
+        downLoadLink.href = URL.createObjectURL(urlObject);
+        downLoadLink.dataset.downloadurl = [
+            "text/plain",
+            downLoadLink.download,
+            downLoadLink.href
+        ].join(":");
+        downLoadLink.click();
+    };
+
     return (
         <WrapNavbar>
             <SongInfoDialog
@@ -130,44 +172,68 @@ export const Menu = () => {
                         onClick={() => dispatch(toggleTest())}
                     />
                 </Tooltip>
-                <Tooltip disabled={!loaded} content="譜面ファイルをクリップボードにコピー、サイトに保存">
-                    <Button disabled={!loaded} className={Classes.MINIMAL} icon={IconNames.SAVED} intent={mapChanged ? themeDark ? Intent.PRIMARY : Intent.WARNING : Intent.NONE} large={true} onClick={() => {
-                        dispatch(editorModule.actions.saveMap());
-                        const listener = (e: ClipboardEvent) => {
-                            if (e.clipboardData) {
-                                e.clipboardData.setData("text/plain", JSON.stringify(mapJson, null, '\t'));
-                                menuToast.show({ message: 'クリップボードにコピー、保存しました', intent: Intent.PRIMARY, timeout: 2000 });
-                            }
-                            e.preventDefault();
-                            document.removeEventListener("copy", listener);
-                        }
-                        document.addEventListener("copy", listener);
-                        document.execCommand("copy");
-                    }} />
+                <Tooltip
+                    disabled={!loaded}
+                    content="譜面ファイルをクリップボードにコピー、サイトに保存"
+                >
+                    <Button
+                        disabled={!loaded}
+                        className={Classes.MINIMAL}
+                        icon={IconNames.SAVED}
+                        intent={mapChanged ? (themeDark ? 'primary' : 'warning') : 'none'}
+                        large
+                        onClick={copyAndSave}
+                    />
                 </Tooltip>
                 <Tooltip disabled={!loaded} content="譜面出力">
-                    <Button disabled={!loaded} className={Classes.MINIMAL} icon={IconNames.EXPORT} large={true} onClick={() => {
-                        const downLoadLink = document.createElement('a');
-                        downLoadLink.download = 'map.json';
-                        downLoadLink.href = URL.createObjectURL(new Blob([JSON.stringify(mapJson, null, '\t')], { type: "text.plain" }));
-                        downLoadLink.dataset.downloadurl = ["text/plain", downLoadLink.download, downLoadLink.href].join(":");
-                        downLoadLink.click();
-                    }} />
+                    <Button
+                        disabled={!loaded}
+                        className={Classes.MINIMAL}
+                        icon={IconNames.EXPORT}
+                        large
+                        onClick={download}
+                    />
                 </Tooltip>
                 <NavbarDivider />
                 <Tooltip content="エディタ設定">
-                    <Button className={Classes.MINIMAL} icon={IconNames.COG} large={true} onClick={() => { settingOpen(true) }} />
+                    <Button
+                        className={Classes.MINIMAL}
+                        icon={IconNames.COG}
+                        large
+                        onClick={handleSettingDialog}
+                    />
                 </Tooltip>
                 <Tooltip content="使い方">
-                    <AnchorButton className={Classes.MINIMAL} icon={IconNames.HELP} large={true} href="https://note.com/bo_yakitarako/n/n287021401622" target="_blank" />
+                    <AnchorButton
+                        className={Classes.MINIMAL}
+                        icon={IconNames.HELP}
+                        large
+                        href="https://note.com/bo_yakitarako/n/n287021401622"
+                        target="_blank"
+                        rel="noopener"
+                    />
                 </Tooltip>
                 <Tooltip content="Sparebeat設定">
-                    <AnchorButton minimal large icon={IconNames.SETTINGS} href="https://sparebeat.com/settings" onMouseDown={() => { dispatch(editorModule.actions.saveMap()) }} />
+                    <AnchorButton
+                        minimal
+                        large
+                        icon={IconNames.SETTINGS}
+                        href="https://sparebeat.com/settings"
+                        onMouseDown={() => dispatch(saveMap())}
+                    />
                 </Tooltip>
                 <Tooltip disabled={loaded} content="オンラインオーディオコンバータ">
-                    <AnchorButton disabled={loaded} minimal={true} icon={IconNames.CHANGES} large={true} href="https://online-audio-converter.com/ja/" target="_blank" />
+                    <AnchorButton
+                        disabled={loaded}
+                        minimal
+                        large
+                        icon={IconNames.CHANGES}
+                        href="https://online-audio-converter.com/ja/"
+                        target="_blank"
+                        rel="noopener"
+                    />
                 </Tooltip>
-                <NavbarHeading style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', right: 20 }}>{title}</NavbarHeading>
+                <SongTitle>{title}</SongTitle>
             </NavbarGroup>
         </WrapNavbar>
     )
@@ -179,4 +245,11 @@ const WrapNavbar = styled(Navbar)`
 
 const BackgroundDialog = styled(Dialog)`
     width: 600px;
+`;
+
+const SongTitle = styled(NavbarHeading)`
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    right: 20px;
 `;
