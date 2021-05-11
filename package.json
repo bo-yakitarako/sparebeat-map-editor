@@ -17,7 +17,7 @@
     "@types/react-color": "^3.0.1",
     "@types/react-dom": "^16.9.0",
     "@types/redux-shortcuts": "^0.0.1",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.21",
     "react": "^16.12.0",
     "react-color": "^2.18.0",
     "react-dom": "^16.12.0",
